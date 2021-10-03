@@ -10,8 +10,8 @@
 // @homepage     https://github.com/Apkawa/userscripts
 // @homepageUrl  https://github.com/Apkawa/userscripts
 // @supportUrl   https://github.com/Apkawa/userscripts/issues
-// @downloadUrl  https://github.com/Apkawa/userscripts/raw/gh-pages/pikabu.ru/video_url.user.js
-// @updateUrl    https://github.com/Apkawa/userscripts/raw/gh-pages/pikabu.ru/video_url.user.js
+// @downloadUrl  https://github.com/Apkawa/userscripts/raw/master/pikabu.ru/video_url.user.js
+// @updateUrl    https://github.com/Apkawa/userscripts/raw/master/pikabu.ru/video_url.user.js
 // ==/UserScript==
 (() => {
     "use strict";
