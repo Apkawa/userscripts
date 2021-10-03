@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kinopoisk subtitle petition
 // @namespace    http://tampermonkey.net/
-// @version      0.3.1
+// @version      0.4
 // @description  Helper for subtitle petition
 // @author       Apkawa
 // @license      MIT
@@ -125,6 +125,9 @@
         const el = getElementByXpath(`//span[@class='user__name']`);
         return el === null || el === void 0 ? void 0 : el.innerText;
     }
+    function normalizeKPLink(s) {
+        return s.replace(/www\./, "");
+    }
     function hdAddRequest(sub) {
         let filmContainer = getElementByXpath("ancestor::section", sub);
         if (!filmContainer) {
@@ -140,7 +143,7 @@
             let link = getElementByXpath(`//a[text() ='Подробнее на КиноПоиске']`, filmContainer).href.toString();
             let type = getElementByXpath(`//button[text() = 'О сериале']`) ? "series" : "film";
             return {
-                link: link,
+                link: normalizeKPLink(link),
                 type: type
             };
         }
@@ -180,7 +183,7 @@
         let audioNames = audio === null || audio === void 0 ? void 0 : audio.innerText.split(", ");
         let subNames = sub.innerText.split(", ");
         let info = {
-            link: window.location.href,
+            link: normalizeKPLink(window.location.href),
             type: ((_b = window.location.href.match("https://(?:www.|)kinopoisk.ru/(series|film)/")) === null || _b === void 0 ? void 0 : _b[1]) || ""
         };
         if (!(audioNames === null || audioNames === void 0 ? void 0 : audioNames.includes("Английский")) && country !== "Россия") {

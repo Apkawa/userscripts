@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kinopoisk subtitle petition
 // @namespace    http://tampermonkey.net/
-// @version      0.3.1
+// @version      0.4
 // @description  Helper for subtitle petition
 // @author       Apkawa
 // @license      MIT
@@ -47,6 +47,9 @@ function getUserName() {
   return el?.innerText
 }
 
+function normalizeKPLink (s: string): string {
+  return s.replace(/www\./, '')
+}
 
 function hdAddRequest(sub: HTMLElement) {
   let filmContainer = getElementByXpath('ancestor::section', sub)
@@ -66,7 +69,7 @@ function hdAddRequest(sub: HTMLElement) {
     ) as HTMLLinkElement).href.toString();
     let type = getElementByXpath(`//button[text() = 'О сериале']`) ? 'series' : 'film'
     return {
-      link,
+      link: normalizeKPLink(link),
       type,
     }
   }
@@ -113,7 +116,7 @@ function kinopoiskAddRequest(sub: HTMLElement) {
   let subNames = sub.innerText.split(', ')
 
   let info = {
-    link: window.location.href,
+    link: normalizeKPLink(window.location.href),
     type: window.location.href.match('https://(?:www.|)kinopoisk.ru/(series|film)/')?.[1] || ''
   }
 
