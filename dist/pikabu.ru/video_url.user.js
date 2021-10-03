@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pikabu download video helper
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.2.1
 // @description  Helpers for display direct url for video
 // @author       Apkawa
 // @license      MIT
@@ -13,7 +13,7 @@
 // @downloadUrl  https://github.com/Apkawa/userscripts/raw/master/dist/pikabu.ru/video_url.user.js
 // @updateUrl    https://github.com/Apkawa/userscripts/raw/master/dist/pikabu.ru/video_url.user.js
 // ==/UserScript==
-(() => {
+(function() {
     "use strict";
     var __webpack_exports__ = {};
     function getElementByXpath(xpath, root = document) {

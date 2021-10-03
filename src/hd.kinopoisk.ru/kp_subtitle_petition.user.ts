@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kinopoisk subtitle petition
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.3.1
 // @description  Helper for subtitle petition
 // @author       Apkawa
 // @license      MIT

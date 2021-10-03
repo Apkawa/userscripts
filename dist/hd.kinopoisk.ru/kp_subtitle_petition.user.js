@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kinopoisk subtitle petition
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.3.1
 // @description  Helper for subtitle petition
 // @author       Apkawa
 // @license      MIT
@@ -18,7 +18,7 @@
 // @downloadUrl  https://github.com/Apkawa/userscripts/raw/master/dist/hd.kinopoisk.ru/kp_subtitle_petition.user.js
 // @updateUrl    https://github.com/Apkawa/userscripts/raw/master/dist/hd.kinopoisk.ru/kp_subtitle_petition.user.js
 // ==/UserScript==
-(() => {
+(function() {
     "use strict";
     var __webpack_exports__ = {};
     function getElementByXpath(xpath, root = document) {
@@ -120,8 +120,8 @@
             let link = getElementByXpath(`//a[text() ='Подробнее на КиноПоиске']`, filmContainer).href.toString();
             let type = getElementByXpath(`//button[text() = 'О сериале']`) ? "series" : "film";
             return {
-                link,
-                type
+                link: link,
+                type: type
             };
         }
         if (!audioNames.includes("Английский")) {

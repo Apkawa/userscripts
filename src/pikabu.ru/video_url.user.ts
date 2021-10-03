@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pikabu download video helper
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.2.1
 // @description  Helpers for display direct url for video
 // @author       Apkawa
 // @license      MIT
