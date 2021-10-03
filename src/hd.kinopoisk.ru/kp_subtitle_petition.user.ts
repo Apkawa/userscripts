@@ -14,7 +14,7 @@
 // @grant        none
 // ==/UserScript==
 
-import {E, getElementByXpath, getElementsByXpath, waitElement} from "../utils"
+import {E, getElementByXpath, getElementsByXpath, parseSearch, waitElement} from "../utils"
 
 const FORM_URL = "https://forms.yandex.ru/surveys/10022784.8ae29888f3224e212d4a904160b6baf0a05acd37/"
 
@@ -45,10 +45,6 @@ function fillInputByLabel(label: string, text: string) {
 function getUserName() {
   const el = getElementByXpath(`//span[@class='user__name']`)
   return el?.innerText
-}
-
-function parseSearch() {
-  return Object.fromEntries(new URLSearchParams(window.location.search).entries())
 }
 
 

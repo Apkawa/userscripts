@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pikabu download video helper
 // @namespace    http://tampermonkey.net/
-// @version      0.2.1
+// @version      0.3
 // @description  Helpers for display direct url for video
 // @author       Apkawa
 // @license      MIT
@@ -9,18 +9,22 @@
 // @match        https://pikabu.ru/*
 // ==/UserScript==
 
-import {waitElement} from "../utils";
+import {matchLocation, waitElement} from "../utils";
 
 (function () {
   'use strict';
+
+  if (!matchLocation("^https://pikabu.ru/.*")) {
+    return
+  }
 
   function addDownloadButtonsForVideo(el: HTMLElement) {
     if (el.getAttribute('linked')) {
       return
     }
-    let source = (el.dataset.source || '').replace(/\.\w{3,4}$/, '')
+    let source = el.dataset.source?.replace(/\.\w{3,4}$/, '')
     el.setAttribute('linked', '1')
-    if (!source.match('pikabu.ru')) {
+    if (!source?.match('pikabu.ru')) {
       return
     }
     let name = source.split('/').pop()
@@ -31,9 +35,14 @@ import {waitElement} from "../utils";
       align-items: center; justify-content: flex-start`
     )
     let html = ''
-    for (let ext of ['gif', 'mp4', 'webm']) {
+    let extensions = ['mp4', 'webm']
+    if (el.dataset.source?.endsWith('.gif')) {
+      extensions.unshift('gif')
+    }
+    for (let ext of extensions) {
+      let s = el.dataset?.[ext] || `${source}.${ext}`
       html += `<a 
-        href="${source}.${ext}" 
+        href="${s}" 
         style="padding: 5px; margin-right: 5px; border: gray 1px solid; border-radius: 3px; height: 20px"
         download="${name}.${ext}"
         target="_blank"

@@ -76,6 +76,29 @@
         element.appendChild(fragment);
         return element;
     }
+    function matchLocation(...glob_patterns) {
+        let s = document.location.href;
+        for (let p of glob_patterns) {
+            if (isFunction(p) && p(s)) {
+                return true;
+            }
+            if (RegExp(p).test(s)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    function mapLocation(map) {
+        let s = document.location.href;
+        for (let [k, v] of Object.entries(map)) {
+            if (RegExp(k).test(s)) {
+                v();
+            }
+        }
+    }
+    function parseSearch() {
+        return Object.fromEntries(new URLSearchParams(window.location.search).entries());
+    }
     const FORM_URL = "https://forms.yandex.ru/surveys/10022784.8ae29888f3224e212d4a904160b6baf0a05acd37/";
     function radioByText(text) {
         let xpath = `//p[text() = '${text}']/../..`;
@@ -101,9 +124,6 @@
     function getUserName() {
         const el = getElementByXpath(`//span[@class='user__name']`);
         return el === null || el === void 0 ? void 0 : el.innerText;
-    }
-    function parseSearch() {
-        return Object.fromEntries(new URLSearchParams(window.location.search).entries());
     }
     function hdAddRequest(sub) {
         let filmContainer = getElementByXpath("ancestor::section", sub);
