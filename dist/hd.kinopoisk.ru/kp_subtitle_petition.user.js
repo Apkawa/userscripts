@@ -15,8 +15,8 @@
 // @homepage     https://github.com/Apkawa/userscripts
 // @homepageUrl  https://github.com/Apkawa/userscripts
 // @supportUrl   https://github.com/Apkawa/userscripts/issues
-// @downloadUrl  https://github.com/Apkawa/userscripts/raw/master/hd.kinopoisk.ru/kp_subtitle_petition.user.js
-// @updateUrl    https://github.com/Apkawa/userscripts/raw/master/hd.kinopoisk.ru/kp_subtitle_petition.user.js
+// @downloadUrl  https://github.com/Apkawa/userscripts/raw/master/dist/hd.kinopoisk.ru/kp_subtitle_petition.user.js
+// @updateUrl    https://github.com/Apkawa/userscripts/raw/master/dist/hd.kinopoisk.ru/kp_subtitle_petition.user.js
 // ==/UserScript==
 (() => {
     "use strict";
