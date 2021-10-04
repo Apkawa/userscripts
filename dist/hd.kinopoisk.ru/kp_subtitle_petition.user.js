@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kinopoisk subtitle petition
 // @namespace    http://tampermonkey.net/
-// @version      0.4
+// @version      0.5
 // @description  Helper for subtitle petition
 // @author       Apkawa
 // @license      MIT
@@ -27,7 +27,7 @@
     }
     function getElementsByXpath(xpath, root = document) {
         const iterator = document.evaluate(xpath, root, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
-        let result = [];
+        const result = [];
         let el = iterator.iterateNext();
         while (el) {
             result.push(el);
@@ -35,36 +35,57 @@
         }
         return result;
     }
+    function markElementHandled(wrapFn, attrName = "_handled") {
+        return function(el) {
+            if (el.getAttribute(attrName)) {
+                return;
+            }
+            el.setAttribute(attrName, "1");
+            wrapFn(el);
+        };
+    }
     function waitElement(match, callback) {
-        let observer = new MutationObserver((mutations => {
+        const observer = new MutationObserver((mutations => {
             let matchFlag = false;
             mutations.forEach((mutation => {
                 if (!mutation.addedNodes) return;
                 for (let i = 0; i < mutation.addedNodes.length; i++) {
-                    let node = mutation.addedNodes[i];
+                    const node = mutation.addedNodes[i];
                     matchFlag = match(node);
                 }
             }));
             if (matchFlag) {
+                _stop();
                 callback();
+                _start();
             }
         }));
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-            attributes: false,
-            characterData: false
-        });
-        return () => {
+        let isStarted = false;
+        function _start() {
+            if (isStarted) {
+                return;
+            }
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: false,
+                characterData: false
+            });
+            isStarted = true;
+        }
+        function _stop() {
             observer.disconnect();
+            isStarted = false;
+        }
+        _start();
+        return () => {
+            _stop();
         };
     }
     function E(tag, attributes = {}, ...children) {
         const element = document.createElement(tag);
-        for (const attribute in attributes) {
-            if (attributes.hasOwnProperty(attribute)) {
-                element.setAttribute(attribute, attributes[attribute]);
-            }
+        for (const [k, v] of Object.entries(attributes)) {
+            element.setAttribute(k, v);
         }
         const fragment = document.createDocumentFragment();
         children.forEach((child => {
@@ -76,9 +97,9 @@
         element.appendChild(fragment);
         return element;
     }
-    function matchLocation(...glob_patterns) {
-        let s = document.location.href;
-        for (let p of glob_patterns) {
+    function matchLocation(...patterns) {
+        const s = document.location.href;
+        for (const p of patterns) {
             if (isFunction(p) && p(s)) {
                 return true;
             }
@@ -89,8 +110,8 @@
         return false;
     }
     function mapLocation(map) {
-        let s = document.location.href;
-        for (let [k, v] of Object.entries(map)) {
+        const s = document.location.hostname + document.location.pathname;
+        for (const [k, v] of Object.entries(map)) {
             if (RegExp(k).test(s)) {
                 v();
             }
@@ -101,147 +122,142 @@
     }
     const FORM_URL = "https://forms.yandex.ru/surveys/10022784.8ae29888f3224e212d4a904160b6baf0a05acd37/";
     function radioByText(text) {
-        let xpath = `//p[text() = '${text}']/../..`;
+        const xpath = `//p[text() = '${text}']/../..`;
         const matchingElement = getElementByXpath(xpath);
         matchingElement === null || matchingElement === void 0 ? void 0 : matchingElement.click();
     }
     function selectByLabel(label, option) {
-        let xpath = `//p[text() = '${label}']/ancestor::tbody//select`;
+        const xpath = `//p[text() = '${label}']/ancestor::tbody//select`;
         const select = getElementByXpath(xpath);
-        let selected = getElementByXpath(`//option[@selected]`, select);
+        const selected = getElementByXpath(`//option[@selected]`, select);
         selected.removeAttribute("selected");
-        let opt = getElementByXpath(`//option[text() = '${option}']`, select);
+        const opt = getElementByXpath(`//option[text() = '${option}']`, select);
         select.value = opt === null || opt === void 0 ? void 0 : opt.value;
         opt.setAttribute("selected", "1");
         return select;
     }
     function fillInputByLabel(label, text) {
-        let xpath = `//p[text() = '${label}']/ancestor::tbody//input`;
+        const xpath = `//p[text() = '${label}']/ancestor::tbody//input`;
         const el = getElementByXpath(xpath);
         el.value = text;
         return el;
     }
     function getUserName() {
         const el = getElementByXpath(`//span[@class='user__name']`);
-        return el === null || el === void 0 ? void 0 : el.innerText;
+        return (el === null || el === void 0 ? void 0 : el.innerText) || "";
     }
     function normalizeKPLink(s) {
         return s.replace(/www\./, "");
     }
-    function hdAddRequest(sub) {
-        let filmContainer = getElementByXpath("ancestor::section", sub);
+    function renderHdKinopoiskRequestLink(sub) {
+        const filmContainer = getElementByXpath("ancestor::section", sub);
         if (!filmContainer) {
             return;
         }
-        let subNames = [].slice.call(sub.getElementsByTagName("li")).map((el => el.innerText));
-        if (sub.getAttribute("request-added")) {
-            return;
-        }
-        let audio = getElementByXpath(`//div[text() = 'Аудиодорожки']/../ul`);
-        let audioNames = [].slice.call(audio === null || audio === void 0 ? void 0 : audio.getElementsByTagName("li")).map((el => el.innerText));
+        const subNames = [].slice.call(sub.getElementsByTagName("li")).map((el => el.innerText));
+        const audio = getElementByXpath(`//div[text() = 'Аудиодорожки']/../ul`);
+        const audioNames = [].slice.call(audio === null || audio === void 0 ? void 0 : audio.getElementsByTagName("li")).map((el => el.innerText));
         function getInfo() {
-            let link = getElementByXpath(`//a[text() ='Подробнее на КиноПоиске']`, filmContainer).href.toString();
-            let type = getElementByXpath(`//button[text() = 'О сериале']`) ? "series" : "film";
+            const link = getElementByXpath(`//a[text() ='Подробнее на КиноПоиске']`, filmContainer).href.toString();
+            const type = getElementByXpath(`//button[text() = 'О сериале']`) ? "series" : "film";
             return {
                 link: normalizeKPLink(link),
                 type: type
             };
         }
         if (!audioNames.includes("Английский")) {
-            let info = Object.assign(Object.assign({}, getInfo()), {
+            const info = Object.assign(Object.assign({}, getInfo()), {
                 mode: "audio"
             });
-            let formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
-            let li = E("li", {}, E("a", {
+            const formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
+            const li = E("li", {}, E("a", {
                 href: formUrl,
                 target: "_blank"
             }, "Запросить оригинальную озвучку"));
             audio === null || audio === void 0 ? void 0 : audio.appendChild(li);
         }
         if (!subNames.includes("Русские")) {
-            let info = getInfo();
-            let formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
-            let li = E("li", {}, E("a", {
+            const info = getInfo();
+            const formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
+            const li = E("li", {}, E("a", {
                 href: formUrl,
                 target: "_blank"
             }, "Запросить русские сабы"));
             sub.appendChild(li);
         }
-        sub.setAttribute("request-added", "1");
     }
-    function kinopoiskAddRequest(sub) {
+    function renderKinopoiskRequestLink(sub) {
         var _a, _b;
-        let filmContainer = getElementByXpath("ancestor::body", sub);
+        const filmContainer = getElementByXpath("ancestor::body", sub);
         if (!filmContainer) {
             return;
         }
-        if (sub.getAttribute("request-added")) {
-            return;
-        }
         const country = (_a = getElementByXpath(`//div[text() = 'Страна']/following-sibling::div`, filmContainer)) === null || _a === void 0 ? void 0 : _a.innerText;
-        let audio = getElementByXpath(`//div[text() = 'Аудиодорожки']/following-sibling::div`, filmContainer);
-        let audioNames = audio === null || audio === void 0 ? void 0 : audio.innerText.split(", ");
-        let subNames = sub.innerText.split(", ");
-        let info = {
+        const audio = getElementByXpath(`//div[text() = 'Аудиодорожки']/following-sibling::div`, filmContainer);
+        const audioNames = audio === null || audio === void 0 ? void 0 : audio.innerText.split(", ");
+        const subNames = sub.innerText.split(", ");
+        const info = {
             link: normalizeKPLink(window.location.href),
-            type: ((_b = window.location.href.match("https://(?:www.|)kinopoisk.ru/(series|film)/")) === null || _b === void 0 ? void 0 : _b[1]) || ""
+            type: ((_b = /https:\/\/(?:www.|)kinopoisk.ru\/(series|film)\//.exec(window.location.href)) === null || _b === void 0 ? void 0 : _b[1]) || ""
         };
         if (!(audioNames === null || audioNames === void 0 ? void 0 : audioNames.includes("Английский")) && country !== "Россия") {
-            let formUrl = FORM_URL + "?" + new URLSearchParams(Object.assign(Object.assign({}, info), {
+            const formUrl = FORM_URL + "?" + new URLSearchParams(Object.assign(Object.assign({}, info), {
                 mode: "audio"
             })).toString();
-            let li = E("a", {
+            const li = E("a", {
                 href: formUrl,
                 target: "_blank"
             }, "Запросить оригинальную озвучку");
             audio === null || audio === void 0 ? void 0 : audio.appendChild(li);
         }
         if (!subNames.includes("Русские")) {
-            let formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
-            let li = E("a", {
+            const formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
+            const li = E("a", {
                 href: formUrl,
                 target: "_blank"
             }, "Запросить русские сабы");
             sub.appendChild(li);
         }
-        sub.setAttribute("request-added", "1");
     }
     (function() {
-        "use strict";
-        if (window.location.hostname === "forms.yandex.ru") {
-            const params = parseSearch();
-            if (params.type === "film") {
-                radioByText("Фильм");
-            } else {
-                radioByText("Сериал");
-            }
-            if (params.mode === "audio") {
-                radioByText("Аудиодорожку/озвучку");
-                selectByLabel("Какую аудиодорожку добавить?", "Оригинальную");
-            } else {
-                radioByText("Субтитры");
-                fillInputByLabel("Выберите субтитры:", params.lang || "Русский");
-            }
-            fillInputByLabel("Ссылка на фильм/сериал на КиноПоиске", params.link || "");
-            fillInputByLabel("Ваша почта", `${getUserName()}@yandex.ru`);
-        }
-        if (window.location.href.startsWith("https://hd.kinopoisk.ru/")) {
-            let xpath = `//div[text() = 'Субтитры']/../ul`;
-            waitElement((el => Boolean(getElementByXpath(xpath, el))), (() => {
-                let subtitles = getElementsByXpath(xpath);
-                for (let el of subtitles) {
-                    hdAddRequest(el);
+        mapLocation({
+            "^forms.yandex.ru/": () => {
+                const params = parseSearch();
+                if (params.type === "film") {
+                    radioByText("Фильм");
+                } else {
+                    radioByText("Сериал");
                 }
-            }));
-        }
-        if (window.location.href.match("https://(www.|)kinopoisk.ru/(series|film)/")) {
-            let xpath = `//div[text() = 'Субтитры']/following-sibling::div`;
-            waitElement((el => Boolean(getElementByXpath(xpath, el))), (() => {
-                let subtitles = getElementsByXpath(xpath);
-                for (let el of subtitles) {
-                    kinopoiskAddRequest(el);
+                if (params.mode === "audio") {
+                    radioByText("Аудиодорожку/озвучку");
+                    selectByLabel("Какую аудиодорожку добавить?", "Оригинальную");
+                } else {
+                    radioByText("Субтитры");
+                    const el = fillInputByLabel("Выберите субтитры:", params.lang || "Русский");
+                    const hiddenEl = getElementByXpath(`ancestor::table//input[@type='hidden']`, el);
+                    hiddenEl === null || hiddenEl === void 0 ? void 0 : hiddenEl.setAttribute("value", "30010730");
                 }
-            }));
-        }
+                fillInputByLabel("Ссылка на фильм/сериал на КиноПоиске", params.link || "");
+                fillInputByLabel("Ваша почта", `${getUserName()}@yandex.ru`);
+            },
+            "^hd.kinopoisk.ru/": () => {
+                const xpath = `//div[text() = 'Субтитры']/../ul`;
+                waitElement((el => Boolean(getElementByXpath(xpath, el))), (() => {
+                    const subtitles = getElementsByXpath(xpath);
+                    for (const el of subtitles) {
+                        markElementHandled(renderHdKinopoiskRequestLink)(el);
+                    }
+                }));
+            },
+            "(www.|)kinopoisk.ru/(series|film)": () => {
+                const xpath = `//div[text() = 'Субтитры']/following-sibling::div`;
+                waitElement((el => Boolean(getElementByXpath(xpath, el))), (() => {
+                    const subtitles = getElementsByXpath(xpath);
+                    for (const el of subtitles) {
+                        markElementHandled(renderKinopoiskRequestLink)(el);
+                    }
+                }));
+            }
+        });
     })();
 })();
