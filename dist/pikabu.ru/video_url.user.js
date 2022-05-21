@@ -15,32 +15,8 @@
 // ==/UserScript==
 (function() {
     "use strict";
-    var __webpack_exports__ = {};
     function isFunction(x) {
-        return typeof x === "function";
-    }
-    function getElementByXpath(xpath, root = document) {
-        const e = document.evaluate(xpath, root, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-        return e && e;
-    }
-    function getElementsByXpath(xpath, root = document) {
-        const iterator = document.evaluate(xpath, root, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
-        const result = [];
-        let el = iterator.iterateNext();
-        while (el) {
-            result.push(el);
-            el = iterator.iterateNext();
-        }
-        return result;
-    }
-    function markElementHandled(wrapFn, attrName = "_handled") {
-        return function(el) {
-            if (el.getAttribute(attrName)) {
-                return;
-            }
-            el.setAttribute(attrName, "1");
-            wrapFn(el);
-        };
+        return "function" === typeof x;
     }
     function waitElement(match, callback) {
         const observer = new MutationObserver((mutations => {
@@ -60,9 +36,7 @@
         }));
         let isStarted = false;
         function _start() {
-            if (isStarted) {
-                return;
-            }
+            if (isStarted) return;
             observer.observe(document.body, {
                 childList: true,
                 subtree: true,
@@ -80,69 +54,31 @@
             _stop();
         };
     }
-    function E(tag, attributes = {}, ...children) {
-        const element = document.createElement(tag);
-        for (const [k, v] of Object.entries(attributes)) {
-            element.setAttribute(k, v);
-        }
-        const fragment = document.createDocumentFragment();
-        children.forEach((child => {
-            if (typeof child === "string") {
-                child = document.createTextNode(child);
-            }
-            fragment.appendChild(child);
-        }));
-        element.appendChild(fragment);
-        return element;
-    }
     function matchLocation(...patterns) {
         const s = document.location.href;
         for (const p of patterns) {
-            if (isFunction(p) && p(s)) {
-                return true;
-            }
-            if (RegExp(p).test(s)) {
-                return true;
-            }
+            if (isFunction(p) && p(s)) return true;
+            if (RegExp(p).test(s)) return true;
         }
         return false;
     }
-    function mapLocation(map) {
-        const s = document.location.hostname + document.location.pathname;
-        for (const [k, v] of Object.entries(map)) {
-            if (RegExp(k).test(s)) {
-                v();
-            }
-        }
-    }
-    function parseSearch() {
-        return Object.fromEntries(new URLSearchParams(window.location.search).entries());
-    }
     (function() {
         "use strict";
-        if (!matchLocation("^https://pikabu.ru/.*")) {
-            return;
-        }
+        if (!matchLocation("^https://pikabu.ru/.*")) return;
         function addDownloadButtonsForVideo(el) {
             var _a, _b, _c;
-            if (el.getAttribute("linked")) {
-                return;
-            }
-            const source = (_a = el.dataset.source) === null || _a === void 0 ? void 0 : _a.replace(/\.\w{3,4}$/, "");
+            if (el.getAttribute("linked")) return;
+            const source = null === (_a = el.dataset.source) || void 0 === _a ? void 0 : _a.replace(/\.\w{3,4}$/, "");
             el.setAttribute("linked", "1");
-            if (!(source === null || source === void 0 ? void 0 : source.match("pikabu.ru"))) {
-                return;
-            }
+            if (!(null === source || void 0 === source ? void 0 : source.match("pikabu.ru"))) return;
             const name = source.split("/").pop();
             const container = document.createElement("div");
             container.setAttribute("style", `display: flex; width: 100%; height: 25px; \n      align-items: center; justify-content: flex-start`);
             let html = "";
             const extensions = [ "mp4", "webm" ];
-            if ((_b = el.dataset.source) === null || _b === void 0 ? void 0 : _b.endsWith(".gif")) {
-                extensions.unshift("gif");
-            }
+            if (null === (_b = el.dataset.source) || void 0 === _b ? void 0 : _b.endsWith(".gif")) extensions.unshift("gif");
             for (const ext of extensions) {
-                const s = ((_c = el.dataset) === null || _c === void 0 ? void 0 : _c[ext]) || `${source}.${ext}`;
+                const s = (null === (_c = el.dataset) || void 0 === _c ? void 0 : _c[ext]) || `${source}.${ext}`;
                 html += `<a \n        href="${s}" \n        style="padding: 5px; margin-right: 5px; \n        border: gray 1px solid; border-radius: 3px; height: 20px"\n        download="${name || "download"}.${ext}"\n        target="_blank"\n        >${ext}</a>`;
             }
             container.innerHTML = html;

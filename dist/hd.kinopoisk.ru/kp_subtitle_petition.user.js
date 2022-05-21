@@ -20,7 +20,6 @@
 // ==/UserScript==
 (function() {
     "use strict";
-    var __webpack_exports__ = {};
     function getElementByXpath(xpath, root = document) {
         const e = document.evaluate(xpath, root, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
         return e && e;
@@ -37,9 +36,7 @@
     }
     function markElementHandled(wrapFn, attrName = "_handled") {
         return function(el) {
-            if (el.getAttribute(attrName)) {
-                return;
-            }
+            if (el.getAttribute(attrName)) return;
             el.setAttribute(attrName, "1");
             wrapFn(el);
         };
@@ -62,9 +59,7 @@
         }));
         let isStarted = false;
         function _start() {
-            if (isStarted) {
-                return;
-            }
+            if (isStarted) return;
             observer.observe(document.body, {
                 childList: true,
                 subtree: true,
@@ -84,38 +79,18 @@
     }
     function E(tag, attributes = {}, ...children) {
         const element = document.createElement(tag);
-        for (const [k, v] of Object.entries(attributes)) {
-            element.setAttribute(k, v);
-        }
+        for (const [k, v] of Object.entries(attributes)) element.setAttribute(k, v);
         const fragment = document.createDocumentFragment();
         children.forEach((child => {
-            if (typeof child === "string") {
-                child = document.createTextNode(child);
-            }
+            if ("string" === typeof child) child = document.createTextNode(child);
             fragment.appendChild(child);
         }));
         element.appendChild(fragment);
         return element;
     }
-    function matchLocation(...patterns) {
-        const s = document.location.href;
-        for (const p of patterns) {
-            if (isFunction(p) && p(s)) {
-                return true;
-            }
-            if (RegExp(p).test(s)) {
-                return true;
-            }
-        }
-        return false;
-    }
     function mapLocation(map) {
         const s = document.location.hostname + document.location.pathname;
-        for (const [k, v] of Object.entries(map)) {
-            if (RegExp(k).test(s)) {
-                v();
-            }
-        }
+        for (const [k, v] of Object.entries(map)) if (RegExp(k).test(s)) v();
     }
     function parseSearch() {
         return Object.fromEntries(new URLSearchParams(window.location.search).entries());
@@ -124,7 +99,7 @@
     function radioByText(text) {
         const xpath = `//p[text() = '${text}']/../..`;
         const matchingElement = getElementByXpath(xpath);
-        matchingElement === null || matchingElement === void 0 ? void 0 : matchingElement.click();
+        null === matchingElement || void 0 === matchingElement ? void 0 : matchingElement.click();
     }
     function selectByLabel(label, option) {
         const xpath = `//p[text() = '${label}']/ancestor::tbody//select`;
@@ -132,7 +107,7 @@
         const selected = getElementByXpath(`//option[@selected]`, select);
         selected.removeAttribute("selected");
         const opt = getElementByXpath(`//option[text() = '${option}']`, select);
-        select.value = opt === null || opt === void 0 ? void 0 : opt.value;
+        select.value = null === opt || void 0 === opt ? void 0 : opt.value;
         opt.setAttribute("selected", "1");
         return select;
     }
@@ -144,19 +119,17 @@
     }
     function getUserName() {
         const el = getElementByXpath(`//span[@class='user__name']`);
-        return (el === null || el === void 0 ? void 0 : el.innerText) || "";
+        return (null === el || void 0 === el ? void 0 : el.innerText) || "";
     }
     function normalizeKPLink(s) {
         return s.replace(/www\./, "");
     }
     function renderHdKinopoiskRequestLink(sub) {
         const filmContainer = getElementByXpath("ancestor::section", sub);
-        if (!filmContainer) {
-            return;
-        }
+        if (!filmContainer) return;
         const subNames = [].slice.call(sub.getElementsByTagName("li")).map((el => el.innerText));
         const audio = getElementByXpath(`//div[text() = 'Аудиодорожки']/../ul`);
-        const audioNames = [].slice.call(audio === null || audio === void 0 ? void 0 : audio.getElementsByTagName("li")).map((el => el.innerText));
+        const audioNames = [].slice.call(null === audio || void 0 === audio ? void 0 : audio.getElementsByTagName("li")).map((el => el.innerText));
         function getInfo() {
             const link = getElementByXpath(`//a[text() ='Подробнее на КиноПоиске']`, filmContainer).href.toString();
             const type = getElementByXpath(`//button[text() = 'О сериале']`) ? "series" : "film";
@@ -174,7 +147,7 @@
                 href: formUrl,
                 target: "_blank"
             }, "Запросить оригинальную озвучку"));
-            audio === null || audio === void 0 ? void 0 : audio.appendChild(li);
+            null === audio || void 0 === audio ? void 0 : audio.appendChild(li);
         }
         if (!subNames.includes("Русские")) {
             const info = getInfo();
@@ -189,18 +162,16 @@
     function renderKinopoiskRequestLink(sub) {
         var _a, _b;
         const filmContainer = getElementByXpath("ancestor::body", sub);
-        if (!filmContainer) {
-            return;
-        }
-        const country = (_a = getElementByXpath(`//div[text() = 'Страна']/following-sibling::div`, filmContainer)) === null || _a === void 0 ? void 0 : _a.innerText;
+        if (!filmContainer) return;
+        const country = null === (_a = getElementByXpath(`//div[text() = 'Страна']/following-sibling::div`, filmContainer)) || void 0 === _a ? void 0 : _a.innerText;
         const audio = getElementByXpath(`//div[text() = 'Аудиодорожки']/following-sibling::div`, filmContainer);
-        const audioNames = audio === null || audio === void 0 ? void 0 : audio.innerText.split(", ");
+        const audioNames = null === audio || void 0 === audio ? void 0 : audio.innerText.split(", ");
         const subNames = sub.innerText.split(", ");
         const info = {
             link: normalizeKPLink(window.location.href),
-            type: ((_b = /https:\/\/(?:www.|)kinopoisk.ru\/(series|film)\//.exec(window.location.href)) === null || _b === void 0 ? void 0 : _b[1]) || ""
+            type: (null === (_b = /https:\/\/(?:www.|)kinopoisk.ru\/(series|film)\//.exec(window.location.href)) || void 0 === _b ? void 0 : _b[1]) || ""
         };
-        if (!(audioNames === null || audioNames === void 0 ? void 0 : audioNames.includes("Английский")) && country !== "Россия") {
+        if (!(null === audioNames || void 0 === audioNames ? void 0 : audioNames.includes("Английский")) && "Россия" !== country) {
             const formUrl = FORM_URL + "?" + new URLSearchParams(Object.assign(Object.assign({}, info), {
                 mode: "audio"
             })).toString();
@@ -208,7 +179,7 @@
                 href: formUrl,
                 target: "_blank"
             }, "Запросить оригинальную озвучку");
-            audio === null || audio === void 0 ? void 0 : audio.appendChild(li);
+            null === audio || void 0 === audio ? void 0 : audio.appendChild(li);
         }
         if (!subNames.includes("Русские")) {
             const formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
@@ -223,19 +194,15 @@
         mapLocation({
             "^forms.yandex.ru/": () => {
                 const params = parseSearch();
-                if (params.type === "film") {
-                    radioByText("Фильм");
-                } else {
-                    radioByText("Сериал");
-                }
-                if (params.mode === "audio") {
+                if ("film" === params.type) radioByText("Фильм"); else radioByText("Сериал");
+                if ("audio" === params.mode) {
                     radioByText("Аудиодорожку/озвучку");
                     selectByLabel("Какую аудиодорожку добавить?", "Оригинальную");
                 } else {
                     radioByText("Субтитры");
                     const el = fillInputByLabel("Выберите субтитры:", params.lang || "Русский");
                     const hiddenEl = getElementByXpath(`ancestor::table//input[@type='hidden']`, el);
-                    hiddenEl === null || hiddenEl === void 0 ? void 0 : hiddenEl.setAttribute("value", "30010730");
+                    null === hiddenEl || void 0 === hiddenEl ? void 0 : hiddenEl.setAttribute("value", "30010730");
                 }
                 fillInputByLabel("Ссылка на фильм/сериал на КиноПоиске", params.link || "");
                 fillInputByLabel("Ваша почта", `${getUserName()}@yandex.ru`);
@@ -244,18 +211,14 @@
                 const xpath = `//div[text() = 'Субтитры']/../ul`;
                 waitElement((el => Boolean(getElementByXpath(xpath, el))), (() => {
                     const subtitles = getElementsByXpath(xpath);
-                    for (const el of subtitles) {
-                        markElementHandled(renderHdKinopoiskRequestLink)(el);
-                    }
+                    for (const el of subtitles) markElementHandled(renderHdKinopoiskRequestLink)(el);
                 }));
             },
             "(www.|)kinopoisk.ru/(series|film)": () => {
                 const xpath = `//div[text() = 'Субтитры']/following-sibling::div`;
                 waitElement((el => Boolean(getElementByXpath(xpath, el))), (() => {
                     const subtitles = getElementsByXpath(xpath);
-                    for (const el of subtitles) {
-                        markElementHandled(renderKinopoiskRequestLink)(el);
-                    }
+                    for (const el of subtitles) markElementHandled(renderKinopoiskRequestLink)(el);
                 }));
             }
         });
