@@ -9,7 +9,7 @@
 // @match        https://pikabu.ru/*
 // ==/UserScript==
 
-import {matchLocation} from '../utils';
+import {matchLocation, waitElement} from '../utils';
 
 (function () {
   'use strict';
@@ -43,5 +43,20 @@ import {matchLocation} from '../utils';
       }
     },
     true,
+  );
+  // Alternative - ublock
+  // pikabu.ru##img[data-watermarked='1']
+  waitElement(
+    (el) => {
+      const _el = el;
+      return Boolean(_el.querySelectorAll && _el.querySelectorAll("img[data-watermarked='1']"));
+    },
+    () => {
+      const elList = document.querySelectorAll("img[data-watermarked='1']");
+
+      for (const el of elList) {
+        el.remove();
+      }
+    },
   );
 })();
