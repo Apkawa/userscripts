@@ -95,3 +95,18 @@ test('Extract quantity and weight with priority', () => {
     weight_unit: 'кг',
   });
 });
+
+test('Extract combined quantity', () => {
+  expect(parseTitle('60шт х 10уп')).toStrictEqual({
+    weight: null,
+    quantity: 600,
+    item_weight: null,
+    weight_unit: null,
+  });
+  expect(parseTitle('SYNERGETIC 110 шт, набор 2х55 шт, бесфосфатные')).toStrictEqual({
+    weight: null,
+    quantity: 110,
+    item_weight: null,
+    weight_unit: null,
+  });
+});

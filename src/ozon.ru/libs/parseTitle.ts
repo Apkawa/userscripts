@@ -15,10 +15,23 @@ const WEIGHT_REGEXP = mRegExp([
   '|(?<volume_unit>(?<volume_SI>л|литр)|мл))',
 ]);
 
-const QUANTITY_REGEXP = /(?<quantity>\d+)\s?(?<quantity_unit>шт?.|рулон|пакет)/;
+const QUANTITY_UNITS = ['шт', 'рулон', 'пакет', 'уп', 'упаков', 'салфет', 'таб', 'капсул'];
 
-const COMBINE_DELIMETER_REGEXP = /\s?[xх*]\s?/;
-const COMBINE_REGEXP_LIST = [
+const QUANTITY_REGEXP = RegExp(
+  `(?<quantity>\\d+)\\s?(?<quantity_unit>${QUANTITY_UNITS.join('|')})\\.?`,
+);
+
+const QUANTITY_2_REGEXP = RegExp(
+  `(?<quantity_2>\\d+)\\s?(?<quantity_2_unit>${QUANTITY_UNITS.join('|')})\\.?`,
+);
+
+const COMBINE_DELIMETER_REGEXP = /\s?(?:[xх*]|по)\s?/;
+const COMBINE_QUANTITY_LIST = [
+  mRegExp([/(?<quantity_2>\d+)/, COMBINE_DELIMETER_REGEXP, QUANTITY_REGEXP]), // 20x100шт
+  mRegExp([QUANTITY_REGEXP, COMBINE_DELIMETER_REGEXP, /(?<quantity_2>\d+)/]), // 20уп*100
+  mRegExp([QUANTITY_2_REGEXP, COMBINE_DELIMETER_REGEXP, QUANTITY_REGEXP]), // 20уп по 100салф
+];
+const COMBINE_QANTITY_WEIGHT_REGEXP_LIST = [
   mRegExp([WEIGHT_REGEXP, COMBINE_DELIMETER_REGEXP, QUANTITY_REGEXP]), // 100г.x20шт.
   mRegExp([QUANTITY_REGEXP, COMBINE_DELIMETER_REGEXP, WEIGHT_REGEXP]), // 20шт x 100г
   mRegExp([/(?<quantity>\d+)/, COMBINE_DELIMETER_REGEXP, WEIGHT_REGEXP]), // 20x100г
@@ -83,7 +96,7 @@ function parseGroups(groups: MatchGroupsResult): ParseTitleResult {
 }
 
 export function parseTitle(title: string): ParseTitleResult {
-  for (const r of COMBINE_REGEXP_LIST) {
+  for (const r of COMBINE_QANTITY_WEIGHT_REGEXP_LIST) {
     const rMatch = r.exec(title);
     if (rMatch) {
       return parseGroups(rMatch.groups as MatchGroupsResult);
@@ -97,11 +110,23 @@ export function parseTitle(title: string): ParseTitleResult {
   if (weightMatch?.groups) {
     groups = weightMatch.groups;
   }
-  const quantityMatch = QUANTITY_REGEXP.exec(title);
-  if (quantityMatch?.groups) {
-    groups = {...groups, ...quantityMatch.groups};
+
+  let quantity = 0;
+  for (const r of COMBINE_QUANTITY_LIST) {
+    const rMatch = r.exec(title)?.groups;
+    if (rMatch?.quantity && rMatch?.quantity_2) {
+      quantity = parseInt(rMatch.quantity) * parseInt(rMatch.quantity_2);
+      break;
+    }
+  }
+  if (quantity) {
+    groups.quantity = quantity.toString();
+  } else {
+    const quantityMatch = QUANTITY_REGEXP.exec(title);
+    if (quantityMatch?.groups) {
+      groups = {...groups, ...quantityMatch.groups};
+    }
   }
 
-  const result = parseGroups(groups as MatchGroupsResult);
-  return result;
+  return parseGroups(groups as MatchGroupsResult);
 }

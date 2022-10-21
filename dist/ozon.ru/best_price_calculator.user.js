@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Ozon price calculator
+// @name         Ozon best price helper
 // @namespace    http://tampermonkey.net/
-// @version      0.2
-// @description  Считаем стоимость за штуку/за кг
+// @version      0.3
+// @description  Считаем стоимость за штуку/за кг/за л
 // @author       Apkawa
 // @license      MIT
 // @icon         https://www.google.com/s2/favicons?domain=ozon.ru
@@ -87,9 +87,12 @@
         })).join(""));
     }
     const WEIGHT_REGEXP = mRegExp([ /(?<value>\d+[,.]\d+|\d+)/, /\s?/, "(?<unit>", "(?<weight_unit>(?<weight_SI>кг|килограмм)|г|грамм|гр)", "|(?<volume_unit>(?<volume_SI>л|литр)|мл))" ]);
-    const QUANTITY_REGEXP = /(?<quantity>\d+)\s?(?<quantity_unit>шт?.|рулон|пакет)/;
-    const COMBINE_DELIMETER_REGEXP = /\s?[xх*]\s?/;
-    const COMBINE_REGEXP_LIST = [ mRegExp([ WEIGHT_REGEXP, COMBINE_DELIMETER_REGEXP, QUANTITY_REGEXP ]), mRegExp([ QUANTITY_REGEXP, COMBINE_DELIMETER_REGEXP, WEIGHT_REGEXP ]), mRegExp([ /(?<quantity>\d+)/, COMBINE_DELIMETER_REGEXP, WEIGHT_REGEXP ]), mRegExp([ WEIGHT_REGEXP, COMBINE_DELIMETER_REGEXP, /(?<quantity>\d+)/ ]) ];
+    const QUANTITY_UNITS = [ "шт", "рулон", "пакет", "уп", "упаков", "салфет", "таб", "капсул" ];
+    const QUANTITY_REGEXP = RegExp(`(?<quantity>\\d+)\\s?(?<quantity_unit>${QUANTITY_UNITS.join("|")})\\.?`);
+    const QUANTITY_2_REGEXP = RegExp(`(?<quantity_2>\\d+)\\s?(?<quantity_2_unit>${QUANTITY_UNITS.join("|")})\\.?`);
+    const COMBINE_DELIMETER_REGEXP = /\s?(?:[xх*]|по)\s?/;
+    const COMBINE_QUANTITY_LIST = [ mRegExp([ /(?<quantity_2>\d+)/, COMBINE_DELIMETER_REGEXP, QUANTITY_REGEXP ]), mRegExp([ QUANTITY_REGEXP, COMBINE_DELIMETER_REGEXP, /(?<quantity_2>\d+)/ ]), mRegExp([ QUANTITY_2_REGEXP, COMBINE_DELIMETER_REGEXP, QUANTITY_REGEXP ]) ];
+    const COMBINE_QANTITY_WEIGHT_REGEXP_LIST = [ mRegExp([ WEIGHT_REGEXP, COMBINE_DELIMETER_REGEXP, QUANTITY_REGEXP ]), mRegExp([ QUANTITY_REGEXP, COMBINE_DELIMETER_REGEXP, WEIGHT_REGEXP ]), mRegExp([ /(?<quantity>\d+)/, COMBINE_DELIMETER_REGEXP, WEIGHT_REGEXP ]), mRegExp([ WEIGHT_REGEXP, COMBINE_DELIMETER_REGEXP, /(?<quantity>\d+)/ ]) ];
     function parseGroups(groups) {
         const result = {
             weight: null,
@@ -122,17 +125,27 @@
         return result;
     }
     function parseTitle(title) {
-        for (const r of COMBINE_REGEXP_LIST) {
+        var _a;
+        for (const r of COMBINE_QANTITY_WEIGHT_REGEXP_LIST) {
             const rMatch = r.exec(title);
             if (rMatch) return parseGroups(rMatch.groups);
         }
         let groups = {};
         const weightMatch = WEIGHT_REGEXP.exec(title);
         if (null === weightMatch || void 0 === weightMatch ? void 0 : weightMatch.groups) groups = weightMatch.groups;
-        const quantityMatch = QUANTITY_REGEXP.exec(title);
-        if (null === quantityMatch || void 0 === quantityMatch ? void 0 : quantityMatch.groups) groups = Object.assign(Object.assign({}, groups), quantityMatch.groups);
-        const result = parseGroups(groups);
-        return result;
+        let quantity = 0;
+        for (const r of COMBINE_QUANTITY_LIST) {
+            const rMatch = null === (_a = r.exec(title)) || void 0 === _a ? void 0 : _a.groups;
+            if ((null === rMatch || void 0 === rMatch ? void 0 : rMatch.quantity) && (null === rMatch || void 0 === rMatch ? void 0 : rMatch.quantity_2)) {
+                quantity = parseInt(rMatch.quantity) * parseInt(rMatch.quantity_2);
+                break;
+            }
+        }
+        if (quantity) groups.quantity = quantity.toString(); else {
+            const quantityMatch = QUANTITY_REGEXP.exec(title);
+            if (null === quantityMatch || void 0 === quantityMatch ? void 0 : quantityMatch.groups) groups = Object.assign(Object.assign({}, groups), quantityMatch.groups);
+        }
+        return parseGroups(groups);
     }
     function getPriceFromElement(el) {
         var _a, _b;
@@ -151,9 +164,6 @@
     function renderBestPrice(price, titleInfo) {
         const wrapEl = document.createElement("div");
         wrapEl.className = "GM-best-price";
-        wrapEl.style.border = "1px solid red";
-        wrapEl.style.padding = "5px";
-        wrapEl.style.width = "fit-content";
         if (!price) return wrapEl;
         if (titleInfo.weight) {
             const weightEl = document.createElement("p");
@@ -164,6 +174,12 @@
             const qtyEl = document.createElement("p");
             qtyEl.innerText = `${round(price / titleInfo.quantity)} ₽/шт`;
             wrapEl.appendChild(qtyEl);
+        }
+        if (wrapEl.childNodes.length) {
+            wrapEl.style.border = "1px solid red";
+            wrapEl.style.padding = "5px";
+            wrapEl.style.margin = "5px";
+            wrapEl.style.width = "fit-content";
         }
         return wrapEl;
     }

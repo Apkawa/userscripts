@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Ozon price calculator
+// @name         Ozon best price helper
 // @namespace    http://tampermonkey.net/
-// @version      0.2
-// @description  Считаем стоимость за штуку/за кг
+// @version      0.3
+// @description  Считаем стоимость за штуку/за кг/за л
 // @author       Apkawa
 // @license      MIT
 // @icon         https://www.google.com/s2/favicons?domain=ozon.ru
@@ -34,9 +34,6 @@ function round(n: number, parts = 2) {
 function renderBestPrice(price: number | null, titleInfo: ParseTitleResult): HTMLElement {
   const wrapEl = document.createElement('div');
   wrapEl.className = 'GM-best-price';
-  wrapEl.style.border = '1px solid red';
-  wrapEl.style.padding = '5px';
-  wrapEl.style.width = 'fit-content';
   if (!price) {
     return wrapEl;
   }
@@ -52,6 +49,13 @@ function renderBestPrice(price: number | null, titleInfo: ParseTitleResult): HTM
     const qtyEl = document.createElement('p');
     qtyEl.innerText = `${round(price / titleInfo.quantity)} ₽/шт`;
     wrapEl.appendChild(qtyEl);
+  }
+  if (wrapEl.childNodes.length) {
+    wrapEl.style.border = '1px solid red';
+    wrapEl.style.padding = '5px';
+    wrapEl.style.margin = '5px';
+
+    wrapEl.style.width = 'fit-content';
   }
   return wrapEl;
 }
