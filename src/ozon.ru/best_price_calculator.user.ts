@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Ozon price calculator
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @description  Считаем стоимость за штуку/за кг
 // @author       Apkawa
 // @license      MIT
@@ -10,7 +10,7 @@
 // @match        https://www.ozon.ru/*
 // ==/UserScript==
 
-import {matchLocation, waitElement} from '../utils';
+import {getElementByXpath, matchLocation, waitCompletePage} from '../utils';
 import {parseTitle, ParseTitleResult} from './libs/parseTitle';
 
 function getPriceFromElement(el: HTMLElement | null): number | null {
@@ -34,6 +34,9 @@ function round(n: number, parts = 2) {
 function renderBestPrice(price: number | null, titleInfo: ParseTitleResult): HTMLElement {
   const wrapEl = document.createElement('div');
   wrapEl.className = 'GM-best-price';
+  wrapEl.style.border = '1px solid red';
+  wrapEl.style.padding = '5px';
+  wrapEl.style.width = 'fit-content';
   if (!price) {
     return wrapEl;
   }
@@ -73,57 +76,37 @@ function initProductPage() {
         ?.appendChild(renderBestPrice(price, parsedTitle));
     }
   };
-  let run = true;
-  // Ждем когда прогрузится js
-  const stop = waitElement(
-    (el) => {
-      const _el = el;
-      return Boolean(
-        _el.querySelectorAll && _el.querySelectorAll("[data-widget='webCharacteristics']"),
-      );
-    },
-    () => {
-      const allowRun = Boolean(document.querySelector("[data-widget='webOzonAccountPrice']"));
-      if (run && allowRun) {
-        stop();
-        run = false;
-        init();
-      }
-    },
-  );
+  waitCompletePage(() => {
+    init();
+  });
 }
 
 function initCatalog() {
   const init = () => {
-    for (const cardEl of document.querySelectorAll('.widget-search-result-container > div > div')) {
-      const wrapEl = cardEl.querySelector(':scope > div');
-      if (wrapEl && !wrapEl.querySelector('.GM-best-price')) {
+    const cardList = document.querySelectorAll(
+      '.widget-search-result-container > div > div' +
+        ",[data-widget='skuLine'] > div:nth-child(2) > div" +
+        ",[data-widget='skuLineLR'] > div:nth-child(2) > div",
+    );
+    for (const cardEl of cardList) {
+      const wrapEl = getElementByXpath('a/following-sibling::div[1]', cardEl);
+      if (wrapEl && !wrapEl?.querySelector('.GM-best-price')) {
         const price = getPriceFromElement(wrapEl.querySelector('div'));
-        const title = wrapEl.querySelector('a')?.textContent;
+        const titleEl = wrapEl.querySelector('a span.tsBodyL');
+        const title = titleEl?.textContent;
         if (!title) return;
 
         console.log(title, price);
 
         const parsedTitle = parseTitle(title);
 
-        const a = wrapEl.querySelector('a');
-        a?.parentElement?.insertBefore(renderBestPrice(price, parsedTitle), a);
+        titleEl?.parentElement?.insertBefore(renderBestPrice(price, parsedTitle), titleEl);
       }
     }
   };
-  const stop = waitElement(
-    (el) => {
-      const _el = el;
-      return Boolean(_el.querySelectorAll && _el.querySelectorAll("[data-widget='footer']"));
-    },
-    () => {
-      const allowRun = Boolean(document.querySelector('.tile-hover-target'));
-      if (allowRun) {
-        stop();
-        init();
-      }
-    },
-  );
+  waitCompletePage(() => {
+    init();
+  });
 }
 
 (function () {
