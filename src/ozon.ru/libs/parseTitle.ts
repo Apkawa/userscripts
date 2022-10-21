@@ -6,13 +6,17 @@ export type ParseTitleResult = {
   item_weight: number | null;
   weight_unit: string | null;
 };
-
+// const WORD_BOUNDARY_BEGIN = /(?:^|\s)/
+const WORD_BOUNDARY_END = /(?=\s|[.,);]|$)/;
 const WEIGHT_REGEXP = mRegExp([
   /(?<value>\d+[,.]\d+|\d+)/, // Value
   /\s?/, // Space
   '(?<unit>',
-  '(?<weight_unit>(?<weight_SI>кг|килограмм)|г|грамм|гр)',
-  '|(?<volume_unit>(?<volume_SI>л|литр)|мл))',
+  '(?<weight_unit>(?<weight_SI>кг|килограмм(?:ов|а|))|г|грамм(?:ов|а|)|гр)',
+  '|(?<volume_unit>(?<volume_SI>л|литр(?:ов|а|))|мл)',
+  '|(?<length_unit>(?<length_SI>м|метр(?:ов|а|)))',
+  ')',
+  WORD_BOUNDARY_END,
 ]);
 
 const QUANTITY_UNITS = ['шт', 'рулон', 'пакет', 'уп', 'упаков', 'салфет', 'таб', 'капсул'];
@@ -47,6 +51,8 @@ interface MatchGroupsResult {
   weight_SI?: string;
   volume_unit?: string;
   volume_SI?: string;
+  length_unit?: string;
+  length_SI?: string;
 }
 
 function parseGroups(groups: MatchGroupsResult): ParseTitleResult {
@@ -74,6 +80,13 @@ function parseGroups(groups: MatchGroupsResult): ParseTitleResult {
           value /= 1000;
         }
         result.weight_unit = 'л';
+      }
+
+      if (groups.length_unit) {
+        if (!groups.length_SI) {
+          value /= 1000;
+        }
+        result.weight_unit = 'м';
       }
 
       result.weight = value;

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Ozon best price helper
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.4
 // @description  Считаем стоимость за штуку/за кг/за л
 // @author       Apkawa
 // @license      MIT
@@ -16,9 +16,6 @@
 // ==/UserScript==
 (function() {
     "use strict";
-    function isFunction(x) {
-        return "function" === typeof x;
-    }
     function getElementByXpath(xpath, root = document) {
         const e = document.evaluate(xpath, root, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
         return e && e;
@@ -69,6 +66,9 @@
             }), 200);
         }));
     }
+    function isFunction(x) {
+        return "function" === typeof x;
+    }
     function matchLocation(...patterns) {
         const s = document.location.href;
         for (const p of patterns) {
@@ -86,7 +86,8 @@
             return r;
         })).join(""));
     }
-    const WEIGHT_REGEXP = mRegExp([ /(?<value>\d+[,.]\d+|\d+)/, /\s?/, "(?<unit>", "(?<weight_unit>(?<weight_SI>кг|килограмм)|г|грамм|гр)", "|(?<volume_unit>(?<volume_SI>л|литр)|мл))" ]);
+    const WORD_BOUNDARY_END = /(?=\s|[.,);]|$)/;
+    const WEIGHT_REGEXP = mRegExp([ /(?<value>\d+[,.]\d+|\d+)/, /\s?/, "(?<unit>", "(?<weight_unit>(?<weight_SI>кг|килограмм(?:ов|а|))|г|грамм(?:ов|а|)|гр)", "|(?<volume_unit>(?<volume_SI>л|литр(?:ов|а|))|мл)", "|(?<length_unit>(?<length_SI>м|метр(?:ов|а|)))", ")", WORD_BOUNDARY_END ]);
     const QUANTITY_UNITS = [ "шт", "рулон", "пакет", "уп", "упаков", "салфет", "таб", "капсул" ];
     const QUANTITY_REGEXP = RegExp(`(?<quantity>\\d+)\\s?(?<quantity_unit>${QUANTITY_UNITS.join("|")})\\.?`);
     const QUANTITY_2_REGEXP = RegExp(`(?<quantity_2>\\d+)\\s?(?<quantity_2_unit>${QUANTITY_UNITS.join("|")})\\.?`);
@@ -112,6 +113,10 @@
                 if (groups.volume_unit) {
                     if (!groups.volume_SI) value /= 1e3;
                     result.weight_unit = "л";
+                }
+                if (groups.length_unit) {
+                    if (!groups.length_SI) value /= 1e3;
+                    result.weight_unit = "м";
                 }
                 result.weight = value;
                 result.item_weight = value;
@@ -223,6 +228,6 @@
         console.log("OZON>RU");
         if (!matchLocation("^https://(www.|)ozon.ru/.*")) return;
         if (matchLocation("^https://(www.|)ozon.ru/product/.*")) initProductPage();
-        if (matchLocation("^https://(www.|)ozon.ru/(category|highlight)/.*")) initCatalog();
+        if (matchLocation("^https://(www.|)ozon.ru/(category|highlight|search)/.*")) initCatalog();
     })();
 })();

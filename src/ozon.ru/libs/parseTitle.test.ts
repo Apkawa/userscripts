@@ -1,42 +1,53 @@
 import {parseTitle} from './parseTitle';
 
-test('Extract weight', () => {
-  expect(parseTitle('Garnier, 1,5кг')).toStrictEqual({
-    weight: 1.5,
-    quantity: 1,
-    item_weight: 1.5,
-    weight_unit: 'кг',
-  });
+describe('weight', () => {
+  test('Extract weight', () => {
+    expect(parseTitle('Garnier, 1,5кг')).toStrictEqual({
+      weight: 1.5,
+      quantity: 1,
+      item_weight: 1.5,
+      weight_unit: 'кг',
+    });
 
-  expect(parseTitle('Сметана Пискаревская, 15%, 200 г')).toStrictEqual({
-    weight: 0.2,
-    quantity: 1,
-    item_weight: 0.2,
-    weight_unit: 'кг',
-  });
-  expect(
-    parseTitle('Творог фруктовый Агуша Черника 3.9% 100г для дет.пит. с 6 месяцев'),
-  ).toStrictEqual({
-    weight: 0.1,
-    quantity: 1,
-    item_weight: 0.1,
-    weight_unit: 'кг',
-  });
+    expect(parseTitle('Сметана Пискаревская, 15%, 200 г')).toStrictEqual({
+      weight: 0.2,
+      quantity: 1,
+      item_weight: 0.2,
+      weight_unit: 'кг',
+    });
+    expect(
+      parseTitle('Творог фруктовый Агуша Черника 3.9% 100г для дет.пит. с 6 месяцев'),
+    ).toStrictEqual({
+      weight: 0.1,
+      quantity: 1,
+      item_weight: 0.1,
+      weight_unit: 'кг',
+    });
 
-  expect(parseTitle('Garnier Банан для очень сухих волос, 390 мл')).toStrictEqual({
-    weight: 0.39,
-    quantity: 1,
-    item_weight: 0.39,
-    weight_unit: 'л',
+    expect(parseTitle('Garnier Банан для очень сухих волос, 390 мл')).toStrictEqual({
+      weight: 0.39,
+      quantity: 1,
+      item_weight: 0.39,
+      weight_unit: 'л',
+    });
+    expect(parseTitle('Garnier, 390 грамм')).toStrictEqual({
+      weight: 0.39,
+      quantity: 1,
+      item_weight: 0.39,
+      weight_unit: 'кг',
+    });
   });
-  expect(parseTitle('Garnier, 390 грамм')).toStrictEqual({
-    weight: 0.39,
-    quantity: 1,
-    item_weight: 0.39,
-    weight_unit: 'кг',
+  test('extract length', () => {
+    expect(parseTitle('Силовой кабель МБ Провод ВВГмб-П нг(А)-LS 3 x 1,5 мм², 10 м')).toStrictEqual(
+      {
+        weight: 10,
+        quantity: 1,
+        item_weight: 10,
+        weight_unit: 'м',
+      },
+    );
   });
 });
-
 test('Extract quantity', () => {
   expect(parseTitle('Aroy-d Кокосовое молоко 70% жирность 17-19%, 2 шт')).toStrictEqual({
     weight: null,

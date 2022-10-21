@@ -18,6 +18,14 @@
     function isFunction(x) {
         return "function" === typeof x;
     }
+    function matchLocation(...patterns) {
+        const s = document.location.href;
+        for (const p of patterns) {
+            if (isFunction(p) && p(s)) return true;
+            if (RegExp(p).test(s)) return true;
+        }
+        return false;
+    }
     function waitElement(match, callback) {
         const observer = new MutationObserver((mutations => {
             let matchFlag = false;
@@ -53,14 +61,6 @@
         return () => {
             _stop();
         };
-    }
-    function matchLocation(...patterns) {
-        const s = document.location.href;
-        for (const p of patterns) {
-            if (isFunction(p) && p(s)) return true;
-            if (RegExp(p).test(s)) return true;
-        }
-        return false;
     }
     (function() {
         "use strict";

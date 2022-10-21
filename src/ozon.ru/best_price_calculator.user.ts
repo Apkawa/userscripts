@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Ozon best price helper
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.4
 // @description  Считаем стоимость за штуку/за кг/за л
 // @author       Apkawa
 // @license      MIT
@@ -125,7 +125,7 @@ function initCatalog() {
     initProductPage();
   }
 
-  if (matchLocation('^https://(www.|)ozon.ru/(category|highlight)/.*')) {
+  if (matchLocation('^https://(www.|)ozon.ru/(category|highlight|search)/.*')) {
     initCatalog();
   }
 })();
