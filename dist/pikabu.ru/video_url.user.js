@@ -40,7 +40,7 @@
             observer.observe(document.body, {
                 childList: true,
                 subtree: true,
-                attributes: false,
+                attributes: true,
                 characterData: false
             });
             isStarted = true;
