@@ -1,7 +1,8 @@
-import {E, GM_addStyle} from '../../utils';
+import {E, entries, GM_addStyle, values} from '../../utils';
 import {sort} from '../../utils/sort';
 
 const BEST_PRICE_WRAP_CLASS_NAME = 'GM-best-price-wrap';
+const ORDER_NAME_LOCAL_STORAGE = 'GM-best-price-default-order';
 
 const MAX_NUMBER = 99999999999;
 
@@ -16,10 +17,7 @@ interface CatalogRecord {
 
 export function initReorderCatalog(catalogEl: HTMLElement): void {
   const buttonWrap = document.querySelector('[data-widget="searchResultsSort"]');
-
-  const buttonReset = E('button', {class: 'GM-best-order-button'}, 'Reset');
-  const buttonByWeight = E('button', {class: 'GM-best-order-button'}, 'by Weight');
-  const buttonByQuantity = E('button', {class: 'GM-best-order-button'}, 'by Quantity');
+  if (!buttonWrap) return;
 
   const catalogRecords: CatalogRecord[] = [];
   let i = 0;
@@ -35,6 +33,30 @@ export function initReorderCatalog(catalogEl: HTMLElement): void {
     });
   }
 
+  const buttons = {
+    initial_order: E('button', {class: 'GM-best-order-button'}, 'Reset'),
+    weight_price: E('button', {class: 'GM-best-order-button'}, 'by Weight'),
+    quantity_price: E('button', {class: 'GM-best-order-button'}, 'by Quantity'),
+  };
+
+  for (const [k, b] of entries(buttons)) {
+    b.onclick = () => {
+      console.log(k);
+      localStorage.setItem(ORDER_NAME_LOCAL_STORAGE, k);
+      sort<CatalogRecord>(catalogRecords, k);
+      refreshCatalog();
+      setActiveButton(b);
+    };
+  }
+
+  const defaultOrder = localStorage.getItem(ORDER_NAME_LOCAL_STORAGE) as
+    | keyof Omit<CatalogRecord, 'el'>
+    | null;
+
+  if (defaultOrder) {
+    buttons[defaultOrder].click();
+  }
+
   function refreshCatalog(): void {
     const wrap = catalogEl.querySelector(':scope > div');
     if (!wrap) return;
@@ -47,29 +69,12 @@ export function initReorderCatalog(catalogEl: HTMLElement): void {
   }
 
   function setActiveButton(button: HTMLElement) {
-    for (const b of [buttonReset, buttonByQuantity, buttonByWeight]) {
+    for (const b of values(buttons)) {
       b.classList.remove('active');
     }
     button.classList.add('active');
   }
 
-  buttonReset.onclick = () => {
-    console.log('Reset order');
-    sort<CatalogRecord>(catalogRecords, 'initial_order');
-    refreshCatalog();
-    setActiveButton(buttonReset);
-  };
-  buttonByWeight.onclick = () => {
-    console.log('BY WEIGHT');
-    sort<CatalogRecord>(catalogRecords, 'weight_price');
-    refreshCatalog();
-    setActiveButton(buttonByWeight);
-  };
-  buttonByQuantity.onclick = () => {
-    console.log('BY QUANTITY');
-    sort<CatalogRecord>(catalogRecords, 'quantity_price');
-    refreshCatalog();
-    setActiveButton(buttonByQuantity);
-  };
-  buttonWrap && buttonWrap.appendChild(E('div', {}, buttonByQuantity, buttonByWeight, buttonReset));
+  (buttonWrap as HTMLElement).querySelector('.GM-best-price-button-wrap')?.remove();
+  buttonWrap.appendChild(E('div', {class: 'GM-best-price-button-wrap'}, ...values(buttons)));
 }

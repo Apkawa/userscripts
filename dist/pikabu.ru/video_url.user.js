@@ -15,7 +15,7 @@
 // ==/UserScript==
 (function() {
     "use strict";
-    function waitElement(match, callback) {
+    function waitElement(match, callback, root = document.body) {
         const observer = new MutationObserver((mutations => {
             let matchFlag = false;
             mutations.forEach((mutation => {
@@ -34,7 +34,7 @@
         let isStarted = false;
         function _start() {
             if (isStarted) return;
-            observer.observe(document.body, {
+            observer.observe(root, {
                 childList: true,
                 subtree: true,
                 attributes: true,
@@ -64,6 +64,7 @@
     }
     Object.keys;
     Object.entries;
+    Object.values;
     (function() {
         "use strict";
         if (!matchLocation("^https://pikabu.ru/.*")) return;

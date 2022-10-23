@@ -116,6 +116,21 @@ function initCatalog() {
     const catalogEl = document.querySelector('.widget-search-result-container');
     if (catalogEl) {
       initReorderCatalog(catalogEl as HTMLElement);
+
+      // Copy paginator on top
+      const paginator = document.querySelector('[data-widget="megaPaginator"] > div:nth-child(2)');
+      if (paginator?.querySelector('a')) {
+        const nodes = paginator?.cloneNode(true);
+        if (nodes) {
+          (nodes as HTMLElement).classList.add('cloned-paginator');
+          catalogEl.parentElement?.querySelector('.cloned-paginator')?.remove();
+          catalogEl.before(nodes);
+        }
+      }
+
+      waitCompletePage(() => {
+        init();
+      }, catalogEl as HTMLElement);
     }
   };
 

@@ -20,7 +20,7 @@
         const e = document.evaluate(xpath, root, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
         return e && e;
     }
-    function waitElement(match, callback) {
+    function waitElement(match, callback, root = document.body) {
         const observer = new MutationObserver((mutations => {
             let matchFlag = false;
             mutations.forEach((mutation => {
@@ -39,7 +39,7 @@
         let isStarted = false;
         function _start() {
             if (isStarted) return;
-            observer.observe(document.body, {
+            observer.observe(root, {
                 childList: true,
                 subtree: true,
                 attributes: true,
@@ -56,7 +56,7 @@
             _stop();
         };
     }
-    function waitCompletePage(callback) {
+    function waitCompletePage(callback, root = document.body) {
         let t = null;
         const stop = waitElement((() => true), (() => {
             if (t) clearTimeout(t);
@@ -64,7 +64,7 @@
                 stop();
                 callback();
             }), 200);
-        }));
+        }), root);
     }
     function E(tag, attributes = {}, ...children) {
         const element = document.createElement(tag);
@@ -114,6 +114,7 @@
     }
     Object.keys;
     const entries = Object.entries;
+    const values = Object.values;
     const WORD_BOUNDARY_END = /(?=\s|[.,);]|$)/;
     const WEIGHT_REGEXP = mRegExp([ /(?<value>\d+[,.]\d+|\d+)/, /\s?/, "(?<unit>", "(?<weight_unit>(?<weight_SI>кг|килограмм(?:ов|а|))|г|грамм(?:ов|а|)|гр)", "|(?<volume_unit>(?<volume_SI>л|литр(?:ов|а|))|мл)", "|(?<length_unit>(?<length_SI>м|метр(?:ов|а|)))", ")", WORD_BOUNDARY_END ]);
     const QUANTITY_UNITS = [ "шт", "рулон", "пакет", "уп", "упаков", "салфет", "таб", "капсул" ];
@@ -226,19 +227,13 @@
         arr.sort(byPropertiesOf(sortBy));
     }
     const BEST_PRICE_WRAP_CLASS_NAME = "GM-best-price-wrap";
+    const ORDER_NAME_LOCAL_STORAGE = "GM-best-price-default-order";
     const MAX_NUMBER = 99999999999;
     GM_addStyle("button.GM-best-order-button.active { border: 2px solid red; }");
     function initReorderCatalog(catalogEl) {
+        var _a;
         const buttonWrap = document.querySelector('[data-widget="searchResultsSort"]');
-        const buttonReset = E("button", {
-            class: "GM-best-order-button"
-        }, "Reset");
-        const buttonByWeight = E("button", {
-            class: "GM-best-order-button"
-        }, "by Weight");
-        const buttonByQuantity = E("button", {
-            class: "GM-best-order-button"
-        }, "by Quantity");
+        if (!buttonWrap) return;
         const catalogRecords = [];
         let i = 0;
         for (const el of catalogEl.querySelectorAll("." + BEST_PRICE_WRAP_CLASS_NAME)) {
@@ -252,6 +247,26 @@
                 quantity_price: ds.quantity_price ? parseFloat(ds.quantity_price) : MAX_NUMBER
             });
         }
+        const buttons = {
+            initial_order: E("button", {
+                class: "GM-best-order-button"
+            }, "Reset"),
+            weight_price: E("button", {
+                class: "GM-best-order-button"
+            }, "by Weight"),
+            quantity_price: E("button", {
+                class: "GM-best-order-button"
+            }, "by Quantity")
+        };
+        for (const [k, b] of entries(buttons)) b.onclick = () => {
+            console.log(k);
+            localStorage.setItem(ORDER_NAME_LOCAL_STORAGE, k);
+            sort(catalogRecords, k);
+            refreshCatalog();
+            setActiveButton(b);
+        };
+        const defaultOrder = localStorage.getItem(ORDER_NAME_LOCAL_STORAGE);
+        if (defaultOrder) buttons[defaultOrder].click();
         function refreshCatalog() {
             const wrap = catalogEl.querySelector(":scope > div");
             if (!wrap) return;
@@ -261,28 +276,13 @@
             wrap.appendChild(elements);
         }
         function setActiveButton(button) {
-            for (const b of [ buttonReset, buttonByQuantity, buttonByWeight ]) b.classList.remove("active");
+            for (const b of values(buttons)) b.classList.remove("active");
             button.classList.add("active");
         }
-        buttonReset.onclick = () => {
-            console.log("Reset order");
-            sort(catalogRecords, "initial_order");
-            refreshCatalog();
-            setActiveButton(buttonReset);
-        };
-        buttonByWeight.onclick = () => {
-            console.log("BY WEIGHT");
-            sort(catalogRecords, "weight_price");
-            refreshCatalog();
-            setActiveButton(buttonByWeight);
-        };
-        buttonByQuantity.onclick = () => {
-            console.log("BY QUANTITY");
-            sort(catalogRecords, "quantity_price");
-            refreshCatalog();
-            setActiveButton(buttonByQuantity);
-        };
-        buttonWrap && buttonWrap.appendChild(E("div", {}, buttonByQuantity, buttonByWeight, buttonReset));
+        null === (_a = buttonWrap.querySelector(".GM-best-price-button-wrap")) || void 0 === _a ? void 0 : _a.remove();
+        buttonWrap.appendChild(E("div", {
+            class: "GM-best-price-button-wrap"
+        }, ...values(buttons)));
     }
     function getPriceFromElement(el) {
         var _a, _b;
@@ -351,10 +351,25 @@
     }
     function initCatalog() {
         const init = () => {
+            var _a, _b;
             const cardList = document.querySelectorAll(".widget-search-result-container > div > div" + ",[data-widget='skuLine'] > div:nth-child(2) > div" + ",[data-widget='skuLineLR'] > div:nth-child(2) > div");
             for (const cardEl of cardList) processProductCard(cardEl);
             const catalogEl = document.querySelector(".widget-search-result-container");
-            if (catalogEl) initReorderCatalog(catalogEl);
+            if (catalogEl) {
+                initReorderCatalog(catalogEl);
+                const paginator = document.querySelector('[data-widget="megaPaginator"] > div:nth-child(2)');
+                if (null === paginator || void 0 === paginator ? void 0 : paginator.querySelector("a")) {
+                    const nodes = null === paginator || void 0 === paginator ? void 0 : paginator.cloneNode(true);
+                    if (nodes) {
+                        nodes.classList.add("cloned-paginator");
+                        null === (_b = null === (_a = catalogEl.parentElement) || void 0 === _a ? void 0 : _a.querySelector(".cloned-paginator")) || void 0 === _b ? void 0 : _b.remove();
+                        catalogEl.before(nodes);
+                    }
+                }
+                waitCompletePage((() => {
+                    init();
+                }), catalogEl);
+            }
         };
         waitCompletePage((() => {
             init();

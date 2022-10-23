@@ -41,7 +41,7 @@
             wrapFn(el);
         };
     }
-    function waitElement(match, callback) {
+    function waitElement(match, callback, root = document.body) {
         const observer = new MutationObserver((mutations => {
             let matchFlag = false;
             mutations.forEach((mutation => {
@@ -60,7 +60,7 @@
         let isStarted = false;
         function _start() {
             if (isStarted) return;
-            observer.observe(document.body, {
+            observer.observe(root, {
                 childList: true,
                 subtree: true,
                 attributes: true,
@@ -97,6 +97,7 @@
     }
     Object.keys;
     Object.entries;
+    Object.values;
     const FORM_URL = "https://forms.yandex.ru/surveys/10022784.8ae29888f3224e212d4a904160b6baf0a05acd37/";
     function radioByText(text) {
         const xpath = `//p[text() = '${text}']/../..`;
