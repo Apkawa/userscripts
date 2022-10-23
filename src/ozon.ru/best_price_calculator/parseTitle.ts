@@ -19,7 +19,16 @@ const WEIGHT_REGEXP = mRegExp([
   WORD_BOUNDARY_END,
 ]);
 
-const QUANTITY_UNITS = ['шт', 'рулон', 'пакет', 'уп', 'упаков', 'салфет', 'таб', 'капсул'];
+const QUANTITY_UNITS = [
+  'шт',
+  'рулон',
+  'пакет',
+  'уп',
+  'упаков(?:ок|ки|ка)',
+  'салфет(?:ок|ки|ка)',
+  'таб',
+  'капсул',
+];
 
 const QUANTITY_REGEXP = RegExp(
   `(?<quantity>\\d+)\\s?(?<quantity_unit>${QUANTITY_UNITS.join('|')})\\.?`,
@@ -29,7 +38,7 @@ const QUANTITY_2_REGEXP = RegExp(
   `(?<quantity_2>\\d+)\\s?(?<quantity_2_unit>${QUANTITY_UNITS.join('|')})\\.?`,
 );
 
-const COMBINE_DELIMETER_REGEXP = /\s?(?:[xх*]|по)\s?/;
+const COMBINE_DELIMETER_REGEXP = /\s?(?:[xх*×]|по)\s?/;
 const COMBINE_QUANTITY_LIST = [
   mRegExp([/(?<quantity_2>\d+)/, COMBINE_DELIMETER_REGEXP, QUANTITY_REGEXP]), // 20x100шт
   mRegExp([QUANTITY_REGEXP, COMBINE_DELIMETER_REGEXP, /(?<quantity_2>\d+)/]), // 20уп*100

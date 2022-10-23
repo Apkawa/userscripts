@@ -58,6 +58,25 @@ test('Extract quantity', () => {
 });
 
 test('Extract quantity and weight', () => {
+  expect(parseTitle('Рис Увелка пропаренный, 5×80 г')).toStrictEqual({
+    weight: 0.08 * 5,
+    quantity: 5,
+    item_weight: 0.08,
+    weight_unit: 'кг',
+  });
+  expect(parseTitle("Кофе молотый 500 г, Peppo's набор 2 упаковки по 250 гр")).toStrictEqual({
+    weight: 0.5,
+    quantity: 2,
+    item_weight: 0.25,
+    weight_unit: 'кг',
+  });
+  expect(parseTitle('Кофе молотый, 1 кг, натуральный (2 упаковки по 500г)')).toStrictEqual({
+    weight: 1,
+    quantity: 2,
+    item_weight: 0.5,
+    weight_unit: 'кг',
+  });
+
   expect(
     parseTitle('Пряность Куркума молотая для мяса, риса, овощей Global Spice - набор 3х20 г'),
   ).toStrictEqual({
