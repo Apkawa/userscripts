@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Ozon best price helper
 // @namespace    http://tampermonkey.net/
-// @version      0.4
+// @version      0.5
 // @description  Считаем стоимость за штуку/за кг/за л
 // @author       Apkawa
 // @license      MIT
@@ -66,6 +66,17 @@
             }), 200);
         }));
     }
+    function E(tag, attributes = {}, ...children) {
+        const element = document.createElement(tag);
+        for (const [k, v] of Object.entries(attributes)) element.setAttribute(k, v);
+        const fragment = document.createDocumentFragment();
+        children.forEach((child => {
+            if ("string" === typeof child) child = document.createTextNode(child);
+            fragment.appendChild(child);
+        }));
+        element.appendChild(fragment);
+        return element;
+    }
     function isFunction(x) {
         return "function" === typeof x;
     }
@@ -77,6 +88,17 @@
         }
         return false;
     }
+    function GM_addStyle(css) {
+        const style = document.getElementById("GM_addStyleBy8626") || function() {
+            const style = document.createElement("style");
+            style.type = "text/css";
+            style.id = "GM_addStyleBy8626";
+            document.head.appendChild(style);
+            return style;
+        }();
+        const sheet = style.sheet;
+        null === sheet || void 0 === sheet ? void 0 : sheet.insertRule(css, (sheet.rules || sheet.cssRules || []).length);
+    }
     function isRegexp(value) {
         return "[object RegExp]" === toString.call(value);
     }
@@ -86,6 +108,12 @@
             return r;
         })).join(""));
     }
+    function round(n, parts = 2) {
+        const i = Math.pow(10, parts);
+        return Math.round(n * i) / i;
+    }
+    Object.keys;
+    const entries = Object.entries;
     const WORD_BOUNDARY_END = /(?=\s|[.,);]|$)/;
     const WEIGHT_REGEXP = mRegExp([ /(?<value>\d+[,.]\d+|\d+)/, /\s?/, "(?<unit>", "(?<weight_unit>(?<weight_SI>кг|килограмм(?:ов|а|))|г|грамм(?:ов|а|)|гр)", "|(?<volume_unit>(?<volume_SI>л|литр(?:ов|а|))|мл)", "|(?<length_unit>(?<length_SI>м|метр(?:ов|а|)))", ")", WORD_BOUNDARY_END ]);
     const QUANTITY_UNITS = [ "шт", "рулон", "пакет", "уп", "упаков", "салфет", "таб", "капсул" ];
@@ -152,6 +180,110 @@
         }
         return parseGroups(groups);
     }
+    function parseTitleWithPrice(title, price) {
+        const res = Object.assign(Object.assign({}, parseTitle(title)), {
+            weight_price: null,
+            weight_price_display: null,
+            quantity_price: null,
+            quantity_price_display: null
+        });
+        if ((!res.quantity || 1 == res.quantity) && !res.weight) return null;
+        if (res.weight) {
+            res.weight_price = round(price / res.weight);
+            res.weight_price_display = `${res.weight_price} ₽/${res.weight_unit || "?"}`;
+        }
+        if (res.quantity > 1) {
+            res.quantity_price = round(price / res.quantity);
+            res.quantity_price_display = `${res.quantity_price} ₽/шт`;
+        }
+        return res;
+    }
+    function byPropertiesOf(sortBy) {
+        function compareByProperty(arg) {
+            let key;
+            let sortOrder = 1;
+            if ("string" === typeof arg && arg.startsWith("-")) {
+                sortOrder = -1;
+                key = arg.substr(1);
+            } else key = arg;
+            return function(a, b) {
+                const result = a[key] < b[key] ? -1 : a[key] > b[key] ? 1 : 0;
+                return result * sortOrder;
+            };
+        }
+        return function(obj1, obj2) {
+            let i = 0;
+            let result = 0;
+            const numberOfProperties = null === sortBy || void 0 === sortBy ? void 0 : sortBy.length;
+            while (0 === result && i < numberOfProperties) {
+                result = compareByProperty(sortBy[i])(obj1, obj2);
+                i++;
+            }
+            return result;
+        };
+    }
+    function sort(arr, ...sortBy) {
+        arr.sort(byPropertiesOf(sortBy));
+    }
+    const BEST_PRICE_WRAP_CLASS_NAME = "GM-best-price-wrap";
+    const MAX_NUMBER = 99999999999;
+    GM_addStyle("button.GM-best-order-button.active { border: 2px solid red; }");
+    function initReorderCatalog(catalogEl) {
+        const buttonWrap = document.querySelector('[data-widget="searchResultsSort"]');
+        const buttonReset = E("button", {
+            class: "GM-best-order-button"
+        }, "Reset");
+        const buttonByWeight = E("button", {
+            class: "GM-best-order-button"
+        }, "by Weight");
+        const buttonByQuantity = E("button", {
+            class: "GM-best-order-button"
+        }, "by Quantity");
+        const catalogRecords = [];
+        let i = 0;
+        for (const el of catalogEl.querySelectorAll("." + BEST_PRICE_WRAP_CLASS_NAME)) {
+            const ds = el.dataset;
+            ds["initial_order"] = i.toString();
+            i += 1;
+            catalogRecords.push({
+                el: el,
+                initial_order: i,
+                weight_price: ds.weight_price ? parseFloat(ds.weight_price) : MAX_NUMBER,
+                quantity_price: ds.quantity_price ? parseFloat(ds.quantity_price) : MAX_NUMBER
+            });
+        }
+        function refreshCatalog() {
+            const wrap = catalogEl.querySelector(":scope > div");
+            if (!wrap) return;
+            const elements = document.createDocumentFragment();
+            for (const c of catalogRecords) elements.appendChild(c.el);
+            wrap.innerHTML = "";
+            wrap.appendChild(elements);
+        }
+        function setActiveButton(button) {
+            for (const b of [ buttonReset, buttonByQuantity, buttonByWeight ]) b.classList.remove("active");
+            button.classList.add("active");
+        }
+        buttonReset.onclick = () => {
+            console.log("Reset order");
+            sort(catalogRecords, "initial_order");
+            refreshCatalog();
+            setActiveButton(buttonReset);
+        };
+        buttonByWeight.onclick = () => {
+            console.log("BY WEIGHT");
+            sort(catalogRecords, "weight_price");
+            refreshCatalog();
+            setActiveButton(buttonByWeight);
+        };
+        buttonByQuantity.onclick = () => {
+            console.log("BY QUANTITY");
+            sort(catalogRecords, "quantity_price");
+            refreshCatalog();
+            setActiveButton(buttonByQuantity);
+        };
+        buttonWrap && buttonWrap.appendChild(E("div", {}, buttonByQuantity, buttonByWeight, buttonReset));
+    }
     function getPriceFromElement(el) {
         var _a, _b;
         const priceText = null === (_b = null === (_a = null === el || void 0 === el ? void 0 : el.innerText) || void 0 === _a ? void 0 : _a.split("₽")[0]) || void 0 === _b ? void 0 : _b.trim();
@@ -162,22 +294,18 @@
         const priceEl = document.querySelector(sel);
         return getPriceFromElement(priceEl);
     }
-    function round(n, parts = 2) {
-        const i = Math.pow(10, parts);
-        return Math.round(n * i) / i;
-    }
-    function renderBestPrice(price, titleInfo) {
+    function renderBestPrice(titleInfo) {
         const wrapEl = document.createElement("div");
         wrapEl.className = "GM-best-price";
-        if (!price) return wrapEl;
-        if (titleInfo.weight) {
+        if (!titleInfo) return wrapEl;
+        if (titleInfo.weight_price_display) {
             const weightEl = document.createElement("p");
-            weightEl.innerText = `${round(price / titleInfo.weight)} ₽/${titleInfo.weight_unit || "?"}`;
+            weightEl.innerText = titleInfo.weight_price_display;
             wrapEl.appendChild(weightEl);
         }
-        if (titleInfo.quantity && 1 !== titleInfo.quantity) {
+        if (titleInfo.quantity_price_display) {
             const qtyEl = document.createElement("p");
-            qtyEl.innerText = `${round(price / titleInfo.quantity)} ₽/шт`;
+            qtyEl.innerText = titleInfo.quantity_price_display;
             wrapEl.appendChild(qtyEl);
         }
         if (wrapEl.childNodes.length) {
@@ -190,34 +318,43 @@
     }
     function initProductPage() {
         const init = () => {
-            var _a, _b, _c, _d;
+            var _a, _b;
             const title = null === (_a = document.querySelector("[data-widget='webProductHeading']")) || void 0 === _a ? void 0 : _a.textContent;
             if (!title) return;
-            const price = getPrice("[data-widget='webPrice']");
-            const greenPrice = getPrice("[data-widget='webOzonAccountPrice']");
-            const parsedTitle = parseTitle(title);
-            if (greenPrice) null === (_c = null === (_b = document.querySelector("[data-widget='webOzonAccountPrice']")) || void 0 === _b ? void 0 : _b.parentElement) || void 0 === _c ? void 0 : _c.appendChild(renderBestPrice(greenPrice, parsedTitle)); else null === (_d = document.querySelector("[data-widget='webPrice']")) || void 0 === _d ? void 0 : _d.appendChild(renderBestPrice(price, parsedTitle));
+            let price = getPrice("[data-widget='webOzonAccountPrice']");
+            if (!price) price = getPrice("[data-widget='webPrice']");
+            if (price) {
+                const parsedTitle = parseTitleWithPrice(title, price);
+                null === (_b = document.querySelector("[data-widget='webPrice']")) || void 0 === _b ? void 0 : _b.appendChild(renderBestPrice(parsedTitle));
+            }
         };
         waitCompletePage((() => {
             init();
         }));
     }
+    function processProductCard(cardEl) {
+        var _a;
+        const wrapEl = getElementByXpath("a/following-sibling::div[1]", cardEl);
+        if (!wrapEl || (null === wrapEl || void 0 === wrapEl ? void 0 : wrapEl.querySelector(".GM-best-price"))) return;
+        const price = getPriceFromElement(wrapEl.querySelector("div"));
+        const titleEl = wrapEl.querySelector("a span.tsBodyL");
+        const title = null === titleEl || void 0 === titleEl ? void 0 : titleEl.textContent;
+        if (!title || !price) return;
+        console.log(title, price);
+        const parsedTitle = parseTitleWithPrice(title, price);
+        null === (_a = null === titleEl || void 0 === titleEl ? void 0 : titleEl.parentElement) || void 0 === _a ? void 0 : _a.insertBefore(renderBestPrice(parsedTitle), titleEl);
+        if (parsedTitle) {
+            const ds = cardEl.dataset;
+            cardEl.classList.add("GM-best-price-wrap");
+            for (const [k, v] of entries(parsedTitle)) ds[k] = (v || "").toString();
+        }
+    }
     function initCatalog() {
         const init = () => {
-            var _a;
             const cardList = document.querySelectorAll(".widget-search-result-container > div > div" + ",[data-widget='skuLine'] > div:nth-child(2) > div" + ",[data-widget='skuLineLR'] > div:nth-child(2) > div");
-            for (const cardEl of cardList) {
-                const wrapEl = getElementByXpath("a/following-sibling::div[1]", cardEl);
-                if (wrapEl && !(null === wrapEl || void 0 === wrapEl ? void 0 : wrapEl.querySelector(".GM-best-price"))) {
-                    const price = getPriceFromElement(wrapEl.querySelector("div"));
-                    const titleEl = wrapEl.querySelector("a span.tsBodyL");
-                    const title = null === titleEl || void 0 === titleEl ? void 0 : titleEl.textContent;
-                    if (!title) return;
-                    console.log(title, price);
-                    const parsedTitle = parseTitle(title);
-                    null === (_a = null === titleEl || void 0 === titleEl ? void 0 : titleEl.parentElement) || void 0 === _a ? void 0 : _a.insertBefore(renderBestPrice(price, parsedTitle), titleEl);
-                }
-            }
+            for (const cardEl of cardList) processProductCard(cardEl);
+            const catalogEl = document.querySelector(".widget-search-result-container");
+            if (catalogEl) initReorderCatalog(catalogEl);
         };
         waitCompletePage((() => {
             init();

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Ozon best price helper
 // @namespace    http://tampermonkey.net/
-// @version      0.4
+// @version      0.5
 // @description  Считаем стоимость за штуку/за кг/за л
 // @author       Apkawa
 // @license      MIT
@@ -10,8 +10,9 @@
 // @match        https://www.ozon.ru/*
 // ==/UserScript==
 
-import {getElementByXpath, matchLocation, waitCompletePage} from '../utils';
-import {parseTitle, ParseTitleResult} from './libs/parseTitle';
+import {entries, getElementByXpath, matchLocation, waitCompletePage} from '../utils';
+import {ParseTitlePriceResult, parseTitleWithPrice} from './best_price_calculator/parseTitle';
+import {initReorderCatalog} from './best_price_calculator/bestPriceReorder';
 
 function getPriceFromElement(el: HTMLElement | null): number | null {
   const priceText = el?.innerText?.split('₽')[0]?.trim();
@@ -26,28 +27,23 @@ function getPrice(sel: string): number | null {
   return getPriceFromElement(priceEl);
 }
 
-function round(n: number, parts = 2) {
-  const i = Math.pow(10, parts);
-  return Math.round(n * i) / i;
-}
-
-function renderBestPrice(price: number | null, titleInfo: ParseTitleResult): HTMLElement {
+function renderBestPrice(titleInfo: ParseTitlePriceResult | null): HTMLElement {
   const wrapEl = document.createElement('div');
   wrapEl.className = 'GM-best-price';
-  if (!price) {
+  if (!titleInfo) {
     return wrapEl;
   }
-  if (titleInfo.weight) {
+  if (titleInfo.weight_price_display) {
     const weightEl = document.createElement('p');
     // price -> weight
     //  x    -> 1000г
     // TODO unit size
-    weightEl.innerText = `${round(price / titleInfo.weight)} ₽/${titleInfo.weight_unit || '?'}`;
+    weightEl.innerText = titleInfo.weight_price_display;
     wrapEl.appendChild(weightEl);
   }
-  if (titleInfo.quantity && titleInfo.quantity !== 1) {
+  if (titleInfo.quantity_price_display) {
     const qtyEl = document.createElement('p');
-    qtyEl.innerText = `${round(price / titleInfo.quantity)} ₽/шт`;
+    qtyEl.innerText = titleInfo.quantity_price_display;
     wrapEl.appendChild(qtyEl);
   }
   if (wrapEl.childNodes.length) {
@@ -66,23 +62,44 @@ function initProductPage() {
     if (!title) {
       return;
     }
-    const price = getPrice("[data-widget='webPrice']");
-    const greenPrice = getPrice("[data-widget='webOzonAccountPrice']");
-    const parsedTitle = parseTitle(title);
-
-    if (greenPrice) {
-      document
-        .querySelector("[data-widget='webOzonAccountPrice']")
-        ?.parentElement?.appendChild(renderBestPrice(greenPrice, parsedTitle));
-    } else {
-      document
-        .querySelector("[data-widget='webPrice']")
-        ?.appendChild(renderBestPrice(price, parsedTitle));
+    // Try green price first
+    let price = getPrice("[data-widget='webOzonAccountPrice']");
+    if (!price) {
+      price = getPrice("[data-widget='webPrice']");
+    }
+    if (price) {
+      const parsedTitle = parseTitleWithPrice(title, price);
+      document.querySelector("[data-widget='webPrice']")?.appendChild(renderBestPrice(parsedTitle));
     }
   };
   waitCompletePage(() => {
     init();
   });
+}
+
+function processProductCard(cardEl: HTMLElement): void {
+  const wrapEl = getElementByXpath('a/following-sibling::div[1]', cardEl);
+
+  if (!wrapEl || wrapEl?.querySelector('.GM-best-price')) {
+    return;
+  }
+
+  const price = getPriceFromElement(wrapEl.querySelector('div'));
+  const titleEl = wrapEl.querySelector('a span.tsBodyL');
+  const title = titleEl?.textContent;
+  if (!title || !price) {
+    return;
+  }
+  console.log(title, price);
+  const parsedTitle = parseTitleWithPrice(title, price);
+  titleEl?.parentElement?.insertBefore(renderBestPrice(parsedTitle), titleEl);
+  if (parsedTitle) {
+    const ds = cardEl.dataset;
+    cardEl.classList.add('GM-best-price-wrap');
+    for (const [k, v] of entries(parsedTitle)) {
+      ds[k] = (v || '').toString();
+    }
+  }
 }
 
 function initCatalog() {
@@ -93,21 +110,15 @@ function initCatalog() {
         ",[data-widget='skuLineLR'] > div:nth-child(2) > div",
     );
     for (const cardEl of cardList) {
-      const wrapEl = getElementByXpath('a/following-sibling::div[1]', cardEl);
-      if (wrapEl && !wrapEl?.querySelector('.GM-best-price')) {
-        const price = getPriceFromElement(wrapEl.querySelector('div'));
-        const titleEl = wrapEl.querySelector('a span.tsBodyL');
-        const title = titleEl?.textContent;
-        if (!title) return;
+      processProductCard(cardEl as HTMLElement);
+    }
 
-        console.log(title, price);
-
-        const parsedTitle = parseTitle(title);
-
-        titleEl?.parentElement?.insertBefore(renderBestPrice(price, parsedTitle), titleEl);
-      }
+    const catalogEl = document.querySelector('.widget-search-result-container');
+    if (catalogEl) {
+      initReorderCatalog(catalogEl as HTMLElement);
     }
   };
+
   waitCompletePage(() => {
     init();
   });

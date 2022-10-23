@@ -15,17 +15,6 @@
 // ==/UserScript==
 (function() {
     "use strict";
-    function isFunction(x) {
-        return "function" === typeof x;
-    }
-    function matchLocation(...patterns) {
-        const s = document.location.href;
-        for (const p of patterns) {
-            if (isFunction(p) && p(s)) return true;
-            if (RegExp(p).test(s)) return true;
-        }
-        return false;
-    }
     function waitElement(match, callback) {
         const observer = new MutationObserver((mutations => {
             let matchFlag = false;
@@ -62,6 +51,19 @@
             _stop();
         };
     }
+    function isFunction(x) {
+        return "function" === typeof x;
+    }
+    function matchLocation(...patterns) {
+        const s = document.location.href;
+        for (const p of patterns) {
+            if (isFunction(p) && p(s)) return true;
+            if (RegExp(p).test(s)) return true;
+        }
+        return false;
+    }
+    Object.keys;
+    Object.entries;
     (function() {
         "use strict";
         if (!matchLocation("^https://pikabu.ru/.*")) return;

@@ -1,10 +1,10 @@
-import {mRegExp} from '../../utils';
+import {mRegExp, round} from '../../utils';
 
 export type ParseTitleResult = {
   weight: number | null;
   quantity: number;
   item_weight: number | null;
-  weight_unit: string | null;
+  weight_unit: 'кг' | 'л' | 'м' | null;
 };
 // const WORD_BOUNDARY_BEGIN = /(?:^|\s)/
 const WORD_BOUNDARY_END = /(?=\s|[.,);]|$)/;
@@ -142,4 +142,33 @@ export function parseTitle(title: string): ParseTitleResult {
   }
 
   return parseGroups(groups as MatchGroupsResult);
+}
+
+export interface ParseTitlePriceResult extends ParseTitleResult {
+  weight_price: number | null;
+  weight_price_display: string | null;
+  quantity_price: number | null;
+  quantity_price_display: string | null;
+}
+
+export function parseTitleWithPrice(title: string, price: number): ParseTitlePriceResult | null {
+  const res: ParseTitlePriceResult = {
+    ...parseTitle(title),
+    weight_price: null,
+    weight_price_display: null,
+    quantity_price: null,
+    quantity_price_display: null,
+  };
+  if ((!res.quantity || res.quantity == 1) && !res.weight) {
+    return null;
+  }
+  if (res.weight) {
+    res.weight_price = round(price / res.weight);
+    res.weight_price_display = `${res.weight_price} ₽/${res.weight_unit || '?'}`;
+  }
+  if (res.quantity > 1) {
+    res.quantity_price = round(price / res.quantity);
+    res.quantity_price_display = `${res.quantity_price} ₽/шт`;
+  }
+  return res;
 }

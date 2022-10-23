@@ -95,6 +95,8 @@
     function parseSearch() {
         return Object.fromEntries(new URLSearchParams(window.location.search).entries());
     }
+    Object.keys;
+    Object.entries;
     const FORM_URL = "https://forms.yandex.ru/surveys/10022784.8ae29888f3224e212d4a904160b6baf0a05acd37/";
     function radioByText(text) {
         const xpath = `//p[text() = '${text}']/../..`;
