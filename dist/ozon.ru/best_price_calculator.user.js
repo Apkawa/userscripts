@@ -343,7 +343,7 @@
         const wrapEl = getElementByXpath("a/following-sibling::div[1]", cardEl);
         if (!wrapEl || (null === wrapEl || void 0 === wrapEl ? void 0 : wrapEl.querySelector(".GM-best-price"))) return;
         const price = getPriceFromElement(wrapEl.querySelector("div"));
-        const titleEl = wrapEl.querySelector("a span.tsBodyL");
+        const titleEl = wrapEl.querySelector("a span.tsBodyL, a span.tsBodyM:not([style])");
         const title = null === titleEl || void 0 === titleEl ? void 0 : titleEl.textContent;
         if (!title || !price) {
             storeParsedTitleToElement(cardEl, null);
@@ -357,7 +357,7 @@
     function initCatalog() {
         const init = () => {
             var _a, _b;
-            const cardList = document.querySelectorAll(".widget-search-result-container > div > div" + ",[data-widget='skuLine'] > div:nth-child(2) > div" + ",[data-widget='skuLineLR'] > div:nth-child(2) > div");
+            const cardList = document.querySelectorAll(".widget-search-result-container > div > div" + ",[data-widget='skuLine'] > div:nth-child(2) > div" + ",[data-widget='skuLine'] > div:nth-child(1) > div" + ",[data-widget='skuLineLR'] > div:nth-child(2) > div" + ",[data-widget='skuShelfGoods'] > div:nth-child(2) > div > div > div > div");
             for (const cardEl of cardList) processProductCard(cardEl);
             const catalogEl = document.querySelector(".widget-search-result-container > div");
             const buttonWrapEl = document.querySelector('[data-widget="searchResultsSort"]');
@@ -386,7 +386,8 @@
         console.log("OZON.ru");
         if (!matchLocation("^https://(www\\.|)ozon\\.ru/.*")) return;
         if (matchLocation("^https://(www\\.|)ozon\\.ru/product/.*")) initProductPage();
-        if (matchLocation("^https://(www\\.|)ozon\\.ru/(category|highlight|search)/.*")) initCatalog();
+        if (matchLocation("^https://(www\\.|)ozon\\.ru/")) initCatalog();
+        if (matchLocation("^https://(www\\.|)ozon\\.ru/(category|highlight|search|my|product|brand)/.*")) initCatalog();
     })();
     console.warn(`DEPRECATED! Movied to multisite userscript\nhttps://github.com/Apkawa/userscripts/raw/master/dist/best_price/best_price.user.js `);
 })();
