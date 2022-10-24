@@ -1,10 +1,6 @@
 import {E, entries, GM_addStyle, values} from '../../utils';
 import {sort} from '../../utils/sort';
-
-const BEST_PRICE_WRAP_CLASS_NAME = 'GM-best-price-wrap';
-const ORDER_NAME_LOCAL_STORAGE = 'GM-best-price-default-order';
-
-const MAX_NUMBER = 99999999999;
+import {BEST_PRICE_WRAP_CLASS_NAME, MAX_NUMBER, ORDER_NAME_LOCAL_STORAGE} from './constants';
 
 GM_addStyle('button.GM-best-order-button.active { border: 2px solid red; }');
 
@@ -15,18 +11,20 @@ interface CatalogRecord {
   el: HTMLElement;
 }
 
-export function initReorderCatalog(catalogEl: HTMLElement): void {
-  const buttonWrap = document.querySelector('[data-widget="searchResultsSort"]');
+export function initReorderCatalog(catalogRoot: HTMLElement, buttonRoot: HTMLElement): void {
+  const buttonWrap = buttonRoot;
   if (!buttonWrap) return;
 
   const catalogRecords: CatalogRecord[] = [];
   let i = 0;
-  for (const el of catalogEl.querySelectorAll('.' + BEST_PRICE_WRAP_CLASS_NAME)) {
+  for (const wrapEl of catalogRoot.querySelectorAll(':scope > *')) {
+    const el = wrapEl.classList.contains(BEST_PRICE_WRAP_CLASS_NAME)
+      ? wrapEl
+      : wrapEl.querySelector('.' + BEST_PRICE_WRAP_CLASS_NAME);
     const ds = (el as HTMLElement).dataset;
-    ds['initial_order'] = i.toString();
     i += 1;
     catalogRecords.push({
-      el: el as HTMLElement,
+      el: wrapEl as HTMLElement,
       initial_order: i,
       weight_price: ds.weight_price ? parseFloat(ds.weight_price) : MAX_NUMBER,
       quantity_price: ds.quantity_price ? parseFloat(ds.quantity_price) : MAX_NUMBER,
@@ -58,7 +56,7 @@ export function initReorderCatalog(catalogEl: HTMLElement): void {
   }
 
   function refreshCatalog(): void {
-    const wrap = catalogEl.querySelector(':scope > div');
+    const wrap = catalogRoot;
     if (!wrap) return;
     const elements = document.createDocumentFragment();
     for (const c of catalogRecords) {
@@ -75,6 +73,6 @@ export function initReorderCatalog(catalogEl: HTMLElement): void {
     button.classList.add('active');
   }
 
-  (buttonWrap as HTMLElement).querySelector('.GM-best-price-button-wrap')?.remove();
+  buttonWrap.querySelector('.GM-best-price-button-wrap')?.remove();
   buttonWrap.appendChild(E('div', {class: 'GM-best-price-button-wrap'}, ...values(buttons)));
 }
