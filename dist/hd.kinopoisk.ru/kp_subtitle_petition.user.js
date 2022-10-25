@@ -60,7 +60,7 @@
         let isStarted = false;
         function _start() {
             if (isStarted) return;
-            observer.observe(root, {
+            observer.observe(root || document.body, {
                 childList: true,
                 subtree: true,
                 attributes: true,
