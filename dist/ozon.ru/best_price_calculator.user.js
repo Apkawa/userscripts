@@ -278,7 +278,8 @@
     const ORDER_NAME_LOCAL_STORAGE = "GM-best-price-default-order";
     const MAX_NUMBER = 99999999999;
     const BEST_ORDER_BUTTON_CLASS_NAME = "GM-best-price-button-wrap";
-    GM_addStyle(`button.${BEST_ORDER_BUTTON_CLASS_NAME}.active { border: 2px solid red; }`);
+    GM_addStyle(`button.${BEST_ORDER_BUTTON_CLASS_NAME} {\nborder: 1px solid gray !important; padding: 5px !important; margin: 3px !important; }\n`);
+    GM_addStyle(`button.${BEST_ORDER_BUTTON_CLASS_NAME}.active { border: 2px solid red !important; }`);
     function initReorderCatalog(catalogRoot, buttonRoot) {
         var _a;
         const buttonWrap = buttonRoot;
@@ -293,9 +294,14 @@
             }
             const ds = el.dataset;
             i += 1;
+            let initial_order = parseInt(ds.initial_order || "0");
+            if (!initial_order) {
+                initial_order = i;
+                ds.initial_order = i.toString();
+            }
             catalogRecords.push({
                 el: wrapEl,
-                initial_order: i,
+                initial_order: initial_order,
                 weight_price: ds.weight_price ? parseFloat(ds.weight_price) : MAX_NUMBER,
                 quantity_price: ds.quantity_price ? parseFloat(ds.quantity_price) : MAX_NUMBER
             });
