@@ -37,7 +37,7 @@
             observer.observe(root || document.body, {
                 childList: true,
                 subtree: true,
-                attributes: true,
+                attributes: false,
                 characterData: false
             });
             isStarted = true;
