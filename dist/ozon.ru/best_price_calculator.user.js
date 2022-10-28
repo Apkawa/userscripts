@@ -57,7 +57,7 @@
         };
     }
     function waitCompletePage(callback, options = {}) {
-        const {root: root = document.body, runOnce: runOnce = true, sync: sync = true} = options;
+        const {root: root = document.body, runOnce: runOnce = true, sync: sync = true, delay: delay = 150} = options;
         let t = null;
         let lock = false;
         const run = () => {
@@ -68,9 +68,9 @@
                     lock = true;
                     if (runOnce || sync) stop();
                     callback();
-                    if (sync && !runOnce) setTimeout(run, 100);
+                    if (sync && !runOnce) setTimeout(run, delay);
                     lock = false;
-                }), 150);
+                }), delay);
             }), root);
             return stop;
         };
@@ -225,9 +225,13 @@
         }
         return res;
     }
+    const BEST_PRICE_CLASS_NAME = "GM-best-price";
+    const BEST_PRICE_WRAP_CLASS_NAME = "GM-best-price-wrap";
+    const ORDER_NAME_LOCAL_STORAGE = "GM-best-price-default-order";
+    const MAX_NUMBER = 99999999999;
     function renderBestPrice(titleInfo) {
         const wrapEl = document.createElement("div");
-        wrapEl.className = "GM-best-price";
+        wrapEl.className = BEST_PRICE_CLASS_NAME;
         if (!titleInfo) return wrapEl;
         if (titleInfo.weight_price_display) {
             const weightEl = document.createElement("p");
@@ -274,9 +278,6 @@
     function sort(arr, ...sortBy) {
         arr.sort(byPropertiesOf(sortBy));
     }
-    const BEST_PRICE_WRAP_CLASS_NAME = "GM-best-price-wrap";
-    const ORDER_NAME_LOCAL_STORAGE = "GM-best-price-default-order";
-    const MAX_NUMBER = 99999999999;
     const BEST_ORDER_BUTTON_CLASS_NAME = "GM-best-price-button-wrap";
     GM_addStyle(`button.${BEST_ORDER_BUTTON_CLASS_NAME} {\nborder: 1px solid gray !important; padding: 5px !important; margin: 3px !important; }\n`);
     GM_addStyle(`button.${BEST_ORDER_BUTTON_CLASS_NAME}.active { border: 2px solid red !important; }`);
@@ -352,12 +353,12 @@
         if (priceText) return parseFloat(priceText.replace("&thinsp;", "").replace(" ", "").replace(" ", "").replace(/\s/g, ""));
         return null;
     }
-    function getPrice(sel) {
-        const priceEl = document.querySelector(sel);
+    function getPrice(sel, root = document.body) {
+        const priceEl = (root || document.body).querySelector(sel);
         return getPriceFromElement(priceEl);
     }
     function storeParsedTitleToElement(cardEl, parsedTitle) {
-        cardEl.classList.add("GM-best-price-wrap");
+        cardEl.classList.add(BEST_PRICE_WRAP_CLASS_NAME);
         if (!parsedTitle) return;
         const ds = cardEl.dataset;
         for (const [k, v] of entries(parsedTitle)) ds[k] = (v || "").toString();
