@@ -194,6 +194,7 @@
         }
     }
     (function() {
+        console.warn("DEPRECATED");
         mapLocation({
             "^forms.yandex.ru/": () => {
                 const params = parseSearch();

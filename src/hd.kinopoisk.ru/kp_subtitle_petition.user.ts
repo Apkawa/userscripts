@@ -148,6 +148,7 @@ function renderKinopoiskRequestLink(sub: HTMLElement) {
 }
 
 (function () {
+  console.warn('DEPRECATED');
   mapLocation({
     '^forms.yandex.ru/': () => {
       const params = parseSearch();
