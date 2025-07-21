@@ -10,6 +10,9 @@
 // ==/UserScript==
 
 import {matchLocation, waitElement} from '../utils';
+import {humanFileSize} from '../utils/humanize_format';
+
+
 
 (function () {
   'use strict';
@@ -31,23 +34,33 @@ import {matchLocation, waitElement} from '../utils';
     const container = document.createElement('div');
     container.setAttribute(
       'style',
-      `display: flex; width: 100%; height: 25px; 
+      `display: flex; width: 100%; height: 30px; 
       align-items: center; justify-content: flex-start`,
     );
     let html = '';
-    const extensions = ['mp4', 'webm'];
+    const extensions = ['mp4', 'av1', 'webm'];
     if (el.dataset.source?.endsWith('.gif')) {
       extensions.unshift('gif');
     }
     for (const ext of extensions) {
       const s = el.dataset?.[ext] || `${source}.${ext}`;
+      const size = Number.parseInt(el.dataset?.[`${ext}Size`] || "");
+      let sizeDisplay = ""
+      if (Number.isFinite(size)) {
+        sizeDisplay = humanFileSize(size, true)
+      }
+
+
       html += `<a 
         href="${s}" 
-        style="padding: 5px; margin-right: 5px; 
-        border: gray 1px solid; border-radius: 3px; height: 20px"
+        style="padding: 5px; 
+        margin: 5px;
+        border: gray 1px solid; border-radius: 3px; 
+        height: 25px; line-height: 15px; vertical-align: middle"
         download="${name || 'download'}.${ext}"
         target="_blank"
-        >${ext}</a>`;
+        title="${sizeDisplay}"
+        >${ext} ${sizeDisplay}</a>`;
     }
     container.innerHTML = html;
     el.parentNode && el.parentNode.insertBefore(container, el.nextSibling);
