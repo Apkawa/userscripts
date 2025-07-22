@@ -12,8 +12,6 @@
 import {matchLocation, waitElement} from '../utils';
 import {humanFileSize} from '../utils/humanize_format';
 
-
-
 (function () {
   'use strict';
 
@@ -43,14 +41,19 @@ import {humanFileSize} from '../utils/humanize_format';
       extensions.unshift('gif');
     }
     for (const ext of extensions) {
-      const s = el.dataset?.[ext] || `${source}.${ext}`;
-      const size = Number.parseInt(el.dataset?.[`${ext}Size`] || "");
-      let sizeDisplay = ""
-      if (Number.isFinite(size)) {
-        sizeDisplay = humanFileSize(size, true)
+      let s = el.dataset?.[ext] || `${source}.${ext}`;
+      if (ext == 'av1' && !s.endsWith('.mp4')) {
+        s += '.mp4';
       }
-
-
+      const size = Number.parseInt(el.dataset?.[`${ext}Size`] || '');
+      let sizeDisplay = '';
+      if (! Number.isFinite(size) || size <= 0) {
+        // Обычно файла в этом случае нет
+        continue
+      }
+      if (Number.isFinite(size) && size > 0) {
+        sizeDisplay = humanFileSize(size, true);
+      }
       html += `<a 
         href="${s}" 
         style="padding: 5px; 

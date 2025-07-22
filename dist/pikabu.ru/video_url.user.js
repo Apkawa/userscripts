@@ -93,10 +93,12 @@
             const extensions = [ "mp4", "av1", "webm" ];
             if (null === (_b = el.dataset.source) || void 0 === _b ? void 0 : _b.endsWith(".gif")) extensions.unshift("gif");
             for (const ext of extensions) {
-                const s = (null === (_c = el.dataset) || void 0 === _c ? void 0 : _c[ext]) || `${source}.${ext}`;
+                let s = (null === (_c = el.dataset) || void 0 === _c ? void 0 : _c[ext]) || `${source}.${ext}`;
+                if ("av1" == ext && !s.endsWith(".mp4")) s += ".mp4";
                 const size = Number.parseInt((null === (_d = el.dataset) || void 0 === _d ? void 0 : _d[`${ext}Size`]) || "");
                 let sizeDisplay = "";
-                if (Number.isFinite(size)) sizeDisplay = humanFileSize(size, true);
+                if (!Number.isFinite(size) || size <= 0) continue;
+                if (Number.isFinite(size) && size > 0) sizeDisplay = humanFileSize(size, true);
                 html += `<a \n        href="${s}" \n        style="padding: 5px; \n        margin: 5px;\n        border: gray 1px solid; border-radius: 3px; \n        height: 25px; line-height: 15px; vertical-align: middle"\n        download="${name || "download"}.${ext}"\n        target="_blank"\n        title="${sizeDisplay}"\n        >${ext} ${sizeDisplay}</a>`;
             }
             container.innerHTML = html;
