@@ -1,36 +1,21 @@
-// ==UserScript==
-// @name         Pikabu download video helper
-// @namespace    http://tampermonkey.net/
-// @version      0.4
-// @description  Helpers for display direct url for video
-// @author       Apkawa
-// @license      MIT
-// @icon         https://www.google.com/s2/favicons?domain=pikabu.ru
-// @match        https://pikabu.ru/*
-// @homepage     https://github.com/Apkawa/userscripts
-// @homepageUrl  https://github.com/Apkawa/userscripts
-// @supportUrl   https://github.com/Apkawa/userscripts/issues
-// @downloadUrl  https://github.com/Apkawa/userscripts/raw/master/dist/pikabu.ru/video_url.user.js
-// @updateUrl    https://github.com/Apkawa/userscripts/raw/master/dist/pikabu.ru/video_url.user.js
-// ==/UserScript==
-(function() {
+(() => {
     "use strict";
     function waitElement(match, callback, root = document.body) {
-        const observer = new MutationObserver((mutations => {
+        const observer = new MutationObserver(mutations => {
             let matchFlag = false;
-            mutations.forEach((mutation => {
+            mutations.forEach(mutation => {
                 if (!mutation.addedNodes) return;
                 for (let i = 0; i < mutation.addedNodes.length; i++) {
                     const node = mutation.addedNodes[i];
                     matchFlag = match(node);
                 }
-            }));
+            });
             if (matchFlag) {
                 _stop();
                 callback();
                 _start();
             }
-        }));
+        });
         let isStarted = false;
         function _start() {
             if (isStarted) return;
@@ -52,7 +37,7 @@
         };
     }
     function isFunction(x) {
-        return "function" === typeof x;
+        return typeof x === "function";
     }
     function matchLocation(...patterns) {
         const s = document.location.href;
@@ -72,7 +57,7 @@
         const FLAG_ATTRIBUTE_NAME = "video_url_user";
         function extractSources(el) {
             const m = {};
-            if ("gifx" == el.getAttribute("data-type")) {
+            if (el.getAttribute("data-type") == "gifx") {
                 const bg = el.querySelector('[class^="pkb-player-block__preview"]');
                 if (bg) {
                     const url = Array.from(bg.getAttribute("style")?.matchAll(/url\((['"])?(.*?)\1\)/gi) || [])[0][2];
@@ -109,11 +94,11 @@
             el.parentNode && el.parentNode.insertBefore(container, el.nextSibling);
             el.setAttribute(FLAG_ATTRIBUTE_NAME, "1");
         }
-        waitElement((el => {
+        waitElement(el => {
             const _el = el;
             return Boolean(_el.querySelectorAll && _el.querySelectorAll('[data-role="player"] [class^="pkb-player-block__preview"]'));
-        }), (() => {
-            document.querySelectorAll && document.querySelectorAll('[data-role="player"]').forEach((el => addDownloadButtonsForVideo(el)));
-        }));
+        }, () => {
+            document.querySelectorAll && document.querySelectorAll('[data-role="player"]').forEach(el => addDownloadButtonsForVideo(el));
+        });
     })();
 })();

@@ -1,26 +1,4 @@
-// ==UserScript==
-// @name         Copy all tags for SD
-// @namespace    http://tampermonkey.net/
-// @version      0.5
-// @description  Helper for subtitle petition
-// @author       Apkawa
-// @license      MIT
-// @match        https://danbooru.donmai.us/*
-// @match        https://gelbooru.com/*
-// @match        https://e621.net/posts*
-// @icon         https://www.google.com/s2/favicons?domain=kinopoisk.ru
-// @require      https://greasemonkey.github.io/gm4-polyfill/gm4-polyfill.js
-// @grant        GM_setClipboard
-// @grant GM_setClipboard
-// @grant GM.setClipboard
-
-// @homepage     https://github.com/Apkawa/userscripts
-// @homepageUrl  https://github.com/Apkawa/userscripts
-// @supportUrl   https://github.com/Apkawa/userscripts/issues
-// @downloadUrl  https://github.com/Apkawa/userscripts/raw/master/dist/danbooru/sd-helper-danbooru.user.js
-// @updateUrl    https://github.com/Apkawa/userscripts/raw/master/dist/danbooru/sd-helper-danbooru.user.js
-// ==/UserScript==
-(function() {
+(() => {
     "use strict";
     function mapLocation(map) {
         const s = document.location.hostname + document.location.pathname;
@@ -65,22 +43,22 @@
         return prompt.replaceAll(/[\(\)\[\]\{\}]/g, "\\$&");
     }
     function filterTags(tags) {
-        return tags.filter((t => !EXCLUDED_TAGS_RE.test(t)));
+        return tags.filter(t => !EXCLUDED_TAGS_RE.test(t));
     }
     function filterSections(section) {
         const excludedSections = [ "Meta", "Metadata" ];
-        if ("original" == section["Copyright"]?.[0]) excludedSections.push("Copyright");
+        if (section["Copyright"]?.[0] == "original") excludedSections.push("Copyright");
         for (const n of excludedSections) delete section[n];
         return section;
     }
     function renderClipboardButton(root_el, dataText, button_text, attr_name = "data-sd-tags") {
         const button_el = createElementFromHTML(`<button ${attr_name}='${dataText}'>\n    ${button_text}</button>`);
-        button_el.addEventListener("click", (event => {
+        button_el.addEventListener("click", event => {
             const _this = event.currentTarget;
             const t = _this.getAttribute(attr_name);
             t && void navigator.clipboard.writeText(t);
             return false;
-        }));
+        });
         root_el?.appendChild(button_el);
     }
     function gelbooruGetSectionTagList() {
@@ -123,8 +101,8 @@
         let prompt = "";
         for (const [section, tags] of entries(filteredSectionTagList)) {
             const filteredTags = filterTags(tags);
-            if ("Artist" == section) {
-                const animaArtist = filteredTags.map((t => "@" + t));
+            if (section == "Artist") {
+                const animaArtist = filteredTags.map(t => "@" + t);
                 prompt += `*${section}:* ${filteredTags.join(", ")}, ${animaArtist.join(", ")} \n`;
             } else prompt += `*${section}:* ${filteredTags.join(", ")} \n`;
         }
@@ -142,11 +120,11 @@
             },
             "^gelbooru.com/": () => {
                 const q = parseSearch();
-                if ("post" === q["page"] && "list" === q["s"]) {
+                if (q["page"] === "post" && q["s"] === "list") {
                     const imgs = document.querySelectorAll("article.thumbnail-preview img[title]");
                     for (const img of imgs) renderCopyTagsButton(img.parentElement, img.getAttribute("title") || "");
                 }
-                if ("post" === q["page"] && "view" === q["s"]) {
+                if (q["page"] === "post" && q["s"] === "view") {
                     const img = document.querySelector("section[data-tags]");
                     renderCopyTagsButton(img, img?.getAttribute("data-tags") || "");
                     renderCopyPostPrompt(gelbooruGetSectionTagList(), img);
