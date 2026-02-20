@@ -103,7 +103,7 @@
             return style;
         }();
         const sheet = style.sheet;
-        null === sheet || void 0 === sheet ? void 0 : sheet.insertRule(css, (sheet.rules || sheet.cssRules || []).length);
+        sheet?.insertRule(css, (sheet.rules || sheet.cssRules || []).length);
     }
     Object.keys;
     Object.entries;
@@ -147,8 +147,7 @@
     }
     function fixReplyComment() {
         waitCompletePage((() => {
-            var _a;
-            const replyWrapEl = null === (_a = document.querySelector("div.comment-reply")) || void 0 === _a ? void 0 : _a.parentElement;
+            const replyWrapEl = document.querySelector("div.comment-reply")?.parentElement;
             const toEl = document.querySelector(".story-comments");
             if (replyWrapEl && toEl) {
                 toEl.before(replyWrapEl);

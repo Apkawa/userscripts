@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pikabu download video helper
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.4
 // @description  Helpers for display direct url for video
 // @author       Apkawa
 // @license      MIT
@@ -63,35 +63,57 @@
         return false;
     }
     Object.keys;
-    Object.entries;
+    const entries = Object.entries;
     Object.values;
     (function() {
         "use strict";
         if (!matchLocation("^https://pikabu.ru/.*")) return;
+        console.log("PIKABU Video url");
+        const FLAG_ATTRIBUTE_NAME = "video_url_user";
+        function extractSources(el) {
+            const m = {};
+            if ("gifx" == el.getAttribute("data-type")) {
+                const bg = el.querySelector('[class^="pkb-player-block__preview"]');
+                if (bg) {
+                    const url = Array.from(bg.getAttribute("style")?.matchAll(/url\((['"])?(.*?)\1\)/gi) || [])[0][2];
+                    if (url) {
+                        const source = url.replace(/_p\.\w{3,4}$/, "");
+                        m["gif"] = `${source}.gif`;
+                    }
+                }
+            } else {
+                const sources = el.querySelectorAll("source");
+                for (const s of sources) {
+                    const url = s.getAttribute("src");
+                    if (url) {
+                        const parts = url?.split(/.(\w{3,4})$/);
+                        if (parts?.length > 1) m[parts[1]] = url;
+                    }
+                }
+            }
+            return m;
+        }
         function addDownloadButtonsForVideo(el) {
-            var _a, _b, _c;
-            if (el.getAttribute("linked")) return;
-            const source = null === (_a = el.dataset.source) || void 0 === _a ? void 0 : _a.replace(/\.\w{3,4}$/, "");
-            el.setAttribute("linked", "1");
-            if (!(null === source || void 0 === source ? void 0 : source.match("pikabu.ru"))) return;
-            const name = source.split("/").pop();
+            if (el.getAttribute(FLAG_ATTRIBUTE_NAME)) return;
+            const sources = entries(extractSources(el));
+            if (!sources.length) return;
             const container = document.createElement("div");
             container.setAttribute("style", `display: flex; width: 100%; height: 25px; \n      align-items: center; justify-content: flex-start`);
             let html = "";
-            const extensions = [ "mp4", "webm" ];
-            if (null === (_b = el.dataset.source) || void 0 === _b ? void 0 : _b.endsWith(".gif")) extensions.unshift("gif");
-            for (const ext of extensions) {
-                const s = (null === (_c = el.dataset) || void 0 === _c ? void 0 : _c[ext]) || `${source}.${ext}`;
-                html += `<a \n        href="${s}" \n        style="padding: 5px; margin-right: 5px; \n        border: gray 1px solid; border-radius: 3px; height: 20px"\n        download="${name || "download"}.${ext}"\n        target="_blank"\n        >${ext}</a>`;
+            for (const [ext, url] of sources) {
+                const source = url.replace(/\.\w{3,4}$/, "");
+                const name = source.split("/").pop();
+                html += `<a \n        href='${url}' \n        style='padding: 5px; margin-right: 5px; \n        border: gray 1px solid; border-radius: 3px; height: 20px'\n        download='${name || "download"}.${ext}'\n        target='_blank'\n        >${ext}</a>`;
             }
             container.innerHTML = html;
             el.parentNode && el.parentNode.insertBefore(container, el.nextSibling);
+            el.setAttribute(FLAG_ATTRIBUTE_NAME, "1");
         }
         waitElement((el => {
             const _el = el;
-            return Boolean(_el.querySelectorAll && _el.querySelectorAll(".player"));
+            return Boolean(_el.querySelectorAll && _el.querySelectorAll('[data-role="player"] [class^="pkb-player-block__preview"]'));
         }), (() => {
-            document.querySelectorAll && document.querySelectorAll(".player").forEach((el => addDownloadButtonsForVideo(el)));
+            document.querySelectorAll && document.querySelectorAll('[data-role="player"]').forEach((el => addDownloadButtonsForVideo(el)));
         }));
     })();
 })();

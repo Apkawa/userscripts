@@ -102,7 +102,7 @@
     function radioByText(text) {
         const xpath = `//p[text() = '${text}']/../..`;
         const matchingElement = getElementByXpath(xpath);
-        null === matchingElement || void 0 === matchingElement ? void 0 : matchingElement.click();
+        matchingElement?.click();
     }
     function selectByLabel(label, option) {
         const xpath = `//p[text() = '${label}']/ancestor::tbody//select`;
@@ -110,7 +110,7 @@
         const selected = getElementByXpath(`//option[@selected]`, select);
         selected.removeAttribute("selected");
         const opt = getElementByXpath(`//option[text() = '${option}']`, select);
-        select.value = null === opt || void 0 === opt ? void 0 : opt.value;
+        select.value = opt?.value;
         opt.setAttribute("selected", "1");
         return select;
     }
@@ -122,7 +122,7 @@
     }
     function getUserName() {
         const el = getElementByXpath(`//span[@class='user__name']`);
-        return (null === el || void 0 === el ? void 0 : el.innerText) || "";
+        return el?.innerText || "";
     }
     function normalizeKPLink(s) {
         return s.replace(/www\./, "");
@@ -132,7 +132,7 @@
         if (!filmContainer) return;
         const subNames = [].slice.call(sub.getElementsByTagName("li")).map((el => el.innerText));
         const audio = getElementByXpath(`//div[text() = 'Аудиодорожки']/../ul`);
-        const audioNames = [].slice.call(null === audio || void 0 === audio ? void 0 : audio.getElementsByTagName("li")).map((el => el.innerText));
+        const audioNames = [].slice.call(audio?.getElementsByTagName("li")).map((el => el.innerText));
         function getInfo() {
             const link = getElementByXpath(`//a[text() ='Подробнее на КиноПоиске']`, filmContainer).href.toString();
             const type = getElementByXpath(`//button[text() = 'О сериале']`) ? "series" : "film";
@@ -142,15 +142,16 @@
             };
         }
         if (!audioNames.includes("Английский")) {
-            const info = Object.assign(Object.assign({}, getInfo()), {
+            const info = {
+                ...getInfo(),
                 mode: "audio"
-            });
+            };
             const formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
             const li = E("li", {}, E("a", {
                 href: formUrl,
                 target: "_blank"
             }, "Запросить оригинальную озвучку"));
-            null === audio || void 0 === audio ? void 0 : audio.appendChild(li);
+            audio?.appendChild(li);
         }
         if (!subNames.includes("Русские")) {
             const info = getInfo();
@@ -163,26 +164,26 @@
         }
     }
     function renderKinopoiskRequestLink(sub) {
-        var _a, _b;
         const filmContainer = getElementByXpath("ancestor::body", sub);
         if (!filmContainer) return;
-        const country = null === (_a = getElementByXpath(`//div[text() = 'Страна']/following-sibling::div`, filmContainer)) || void 0 === _a ? void 0 : _a.innerText;
+        const country = getElementByXpath(`//div[text() = 'Страна']/following-sibling::div`, filmContainer)?.innerText;
         const audio = getElementByXpath(`//div[text() = 'Аудиодорожки']/following-sibling::div`, filmContainer);
-        const audioNames = null === audio || void 0 === audio ? void 0 : audio.innerText.split(", ");
+        const audioNames = audio?.innerText.split(", ");
         const subNames = sub.innerText.split(", ");
         const info = {
             link: normalizeKPLink(window.location.href),
-            type: (null === (_b = /https:\/\/(?:www.|)kinopoisk.ru\/(series|film)\//.exec(window.location.href)) || void 0 === _b ? void 0 : _b[1]) || ""
+            type: /https:\/\/(?:www.|)kinopoisk.ru\/(series|film)\//.exec(window.location.href)?.[1] || ""
         };
-        if (!(null === audioNames || void 0 === audioNames ? void 0 : audioNames.includes("Английский")) && "Россия" !== country) {
-            const formUrl = FORM_URL + "?" + new URLSearchParams(Object.assign(Object.assign({}, info), {
+        if (!audioNames?.includes("Английский") && "Россия" !== country) {
+            const formUrl = FORM_URL + "?" + new URLSearchParams({
+                ...info,
                 mode: "audio"
-            })).toString();
+            }).toString();
             const li = E("a", {
                 href: formUrl,
                 target: "_blank"
             }, "Запросить оригинальную озвучку");
-            null === audio || void 0 === audio ? void 0 : audio.appendChild(li);
+            audio?.appendChild(li);
         }
         if (!subNames.includes("Русские")) {
             const formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
@@ -206,7 +207,7 @@
                     radioByText("Субтитры");
                     const el = fillInputByLabel("Выберите субтитры:", params.lang || "Русский");
                     const hiddenEl = getElementByXpath(`ancestor::table//input[@type='hidden']`, el);
-                    null === hiddenEl || void 0 === hiddenEl ? void 0 : hiddenEl.setAttribute("value", "30010730");
+                    hiddenEl?.setAttribute("value", "30010730");
                 }
                 fillInputByLabel("Ссылка на фильм/сериал на КиноПоиске", params.link || "");
                 fillInputByLabel("Ваша почта", `${getUserName()}@yandex.ru`);

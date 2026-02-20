@@ -68,9 +68,8 @@
         return tags.filter((t => !EXCLUDED_TAGS_RE.test(t)));
     }
     function filterSections(section) {
-        var _a;
         const excludedSections = [ "Meta", "Metadata" ];
-        if ("original" == (null === (_a = section["Copyright"]) || void 0 === _a ? void 0 : _a[0])) excludedSections.push("Copyright");
+        if ("original" == section["Copyright"]?.[0]) excludedSections.push("Copyright");
         for (const n of excludedSections) delete section[n];
         return section;
     }
@@ -82,16 +81,15 @@
             t && void navigator.clipboard.writeText(t);
             return false;
         }));
-        null === root_el || void 0 === root_el ? void 0 : root_el.appendChild(button_el);
+        root_el?.appendChild(button_el);
     }
     function gelbooruGetSectionTagList() {
-        var _a;
         const result = {};
         const tagList = document.querySelectorAll('ul.tag-list li[class^="tag-type"]');
         for (const tagEl of tagList) {
             const sectionName = capitalize(tagEl.className.substr("tag-type-".length).trim());
             if (!result[sectionName]) result[sectionName] = [];
-            result[sectionName].push((null === (_a = tagEl.querySelector("& > a")) || void 0 === _a ? void 0 : _a.innerHTML) || "");
+            result[sectionName].push(tagEl.querySelector("& > a")?.innerHTML || "");
         }
         return result;
     }
@@ -135,10 +133,9 @@
     (function() {
         mapLocation({
             "^danbooru.donmai.us/": () => {
-                var _a;
                 const imgs = document.querySelectorAll("[data-tags]");
                 for (const img of imgs) renderCopyTagsButton(img, img.getAttribute("data-tags") || "");
-                null === (_a = document.querySelector("#subnav-menu")) || void 0 === _a ? void 0 : _a.appendChild(createElementFromHTML(`\n        <a id='subnav-help' class='py-1.5 px-3 ' href='/posts/random'>Random</a>\n        `));
+                document.querySelector("#subnav-menu")?.appendChild(createElementFromHTML(`\n        <a id='subnav-help' class='py-1.5 px-3 ' href='/posts/random'>Random</a>\n        `));
             },
             "^danbooru.donmai.us/posts/": () => {
                 renderCopyPostPrompt(danbooruGetSectionTagList(), document.querySelector("section.image-container picture"));
@@ -151,7 +148,7 @@
                 }
                 if ("post" === q["page"] && "view" === q["s"]) {
                     const img = document.querySelector("section[data-tags]");
-                    renderCopyTagsButton(img, (null === img || void 0 === img ? void 0 : img.getAttribute("data-tags")) || "");
+                    renderCopyTagsButton(img, img?.getAttribute("data-tags") || "");
                     renderCopyPostPrompt(gelbooruGetSectionTagList(), img);
                 }
             },
@@ -161,7 +158,7 @@
             },
             "^e621.net/posts/\\d+": () => {
                 const img = document.querySelector("section#image-container");
-                renderCopyTagsButton(img, (null === img || void 0 === img ? void 0 : img.getAttribute("data-tags")) || "");
+                renderCopyTagsButton(img, img?.getAttribute("data-tags") || "");
                 renderCopyPostPrompt(e621GetSectionTagList(), img);
             }
         });
