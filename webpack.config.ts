@@ -30,15 +30,17 @@ function getExtraInfo(data: BannerDataType) {
     author = author?.name;
   }
 
-  return {
+
+  const bannerMeta =  {
     author,
     homepage,
-    homepageUrl: homepage,
-    supportUrl,
-    downloadUrl,
-    updateUrl: downloadUrl,
+    homepageURL: homepage,
+    supportURL: supportUrl,
+    downloadURL: downloadUrl,
+    updateURL: downloadUrl,
     license: packageJson.license,
   };
+  return bannerMeta
 }
 
 type BannerDataType = {hash: string; chunk: webpack.Chunk; filename: string}
@@ -52,6 +54,7 @@ function buildUserScriptMeta(data: BannerDataType) {
     .replace(/(==\/UserScript==)[\s\S]+$/, '$1')
     .replace(/^.*==\/UserScript==.*$/gm, '');
   let extraInfo = getExtraInfo(data);
+  console.log(extraInfo)
   let columnWidth = 13;
   for (let [k, v] of Object.entries(extraInfo)) {
     let re = RegExp(`^//.*@${k}\\b.*$`, 'gm');
@@ -121,7 +124,8 @@ const config: webpack.Configuration = {
           },
           mangle: false,
           format: {
-            comments: false,
+            // comments: true,
+            comments: /^ (==|@)/,
             beautify: true,
           },
         },

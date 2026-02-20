@@ -1,3 +1,24 @@
+// ==UserScript==
+// @name         Copy all tags for SD
+// @namespace    http://tampermonkey.net/
+// @version      0.5
+// @description  Helper for subtitle petition
+// @author       Apkawa
+// @license      MIT
+// @match        https://danbooru.donmai.us/*
+// @match        https://gelbooru.com/*
+// @match        https://e621.net/posts*
+// @icon         https://www.google.com/s2/favicons?domain=kinopoisk.ru
+// @require      https://greasemonkey.github.io/gm4-polyfill/gm4-polyfill.js
+// @grant        GM_setClipboard
+// @grant GM_setClipboard
+// @grant GM.setClipboard
+// @homepage     https://github.com/Apkawa/userscripts
+// @homepageURL  https://github.com/Apkawa/userscripts
+// @supportURL   https://github.com/Apkawa/userscripts/issues
+// @downloadURL  https://github.com/Apkawa/userscripts/raw/master/dist/danbooru/sd-helper-danbooru.user.js
+// @updateURL    https://github.com/Apkawa/userscripts/raw/master/dist/danbooru/sd-helper-danbooru.user.js
+// ==/UserScript==
 (() => {
     "use strict";
     function mapLocation(map) {

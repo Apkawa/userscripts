@@ -1,3 +1,18 @@
+// ==UserScript==
+// @name         Pikabu remove watermark
+// @namespace    http://tampermonkey.net/
+// @version      0.3
+// @description  Helpers for remove watermark (pikabu.ru)
+// @author       Apkawa
+// @license      MIT
+// @icon         https://www.google.com/s2/favicons?domain=pikabu.ru
+// @match        https://pikabu.ru/*
+// @homepage     https://github.com/Apkawa/userscripts
+// @homepageURL  https://github.com/Apkawa/userscripts
+// @supportURL   https://github.com/Apkawa/userscripts/issues
+// @downloadURL  https://github.com/Apkawa/userscripts/raw/master/dist/pikabu.ru/hide_watermark.user.js
+// @updateURL    https://github.com/Apkawa/userscripts/raw/master/dist/pikabu.ru/hide_watermark.user.js
+// ==/UserScript==
 (() => {
     "use strict";
     function waitElement(match, callback, root = document.body) {

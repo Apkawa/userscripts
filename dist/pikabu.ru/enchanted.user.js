@@ -1,3 +1,19 @@
+// ==UserScript==
+// @name         Enhanced pikabu
+// @namespace    http://tampermonkey.net/
+// @version      0.2
+// @description  Улучшения пикабу. Возвращает кнопку Save обратно, перенос ответа на пост вверх.
+// @author       Apkawa
+// @match        https://pikabu.ru/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=pikabu.ru
+// @grant        none
+// @license      MIT
+// @homepage     https://github.com/Apkawa/userscripts
+// @homepageURL  https://github.com/Apkawa/userscripts
+// @supportURL   https://github.com/Apkawa/userscripts/issues
+// @downloadURL  https://github.com/Apkawa/userscripts/raw/master/dist/pikabu.ru/enchanted.user.js
+// @updateURL    https://github.com/Apkawa/userscripts/raw/master/dist/pikabu.ru/enchanted.user.js
+// ==/UserScript==
 (() => {
     "use strict";
     function waitElement(match, callback, root = document.body) {

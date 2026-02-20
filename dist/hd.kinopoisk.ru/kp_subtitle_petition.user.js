@@ -1,3 +1,23 @@
+// ==UserScript==
+// @name         Kinopoisk subtitle petition
+// @namespace    http://tampermonkey.net/
+// @version      0.5
+// @description  Helper for subtitle petition
+// @author       Apkawa
+// @license      MIT
+// @match        https://forms.yandex.ru/surveys/10022784.8ae29888f3224e212d4a904160b6baf0a05acd37/*
+// @match        https://hd.kinopoisk.ru/*
+// @match        https://kinopoisk.ru/*
+// @match        https://www.kinopoisk.ru/*
+// @icon         https://www.google.com/s2/favicons?domain=kinopoisk.ru
+// @require      https://greasemonkey.github.io/gm4-polyfill/gm4-polyfill.js
+// @grant        none
+// @homepage     https://github.com/Apkawa/userscripts
+// @homepageURL  https://github.com/Apkawa/userscripts
+// @supportURL   https://github.com/Apkawa/userscripts/issues
+// @downloadURL  https://github.com/Apkawa/userscripts/raw/master/dist/hd.kinopoisk.ru/kp_subtitle_petition.user.js
+// @updateURL    https://github.com/Apkawa/userscripts/raw/master/dist/hd.kinopoisk.ru/kp_subtitle_petition.user.js
+// ==/UserScript==
 (() => {
     "use strict";
     function getElementByXpath(xpath, root = document) {

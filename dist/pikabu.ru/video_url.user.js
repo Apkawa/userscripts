@@ -1,3 +1,18 @@
+// ==UserScript==
+// @name         Pikabu download video helper
+// @namespace    http://tampermonkey.net/
+// @version      0.4
+// @description  Helpers for display direct url for video
+// @author       Apkawa
+// @license      MIT
+// @icon         https://www.google.com/s2/favicons?domain=pikabu.ru
+// @match        https://pikabu.ru/*
+// @homepage     https://github.com/Apkawa/userscripts
+// @homepageURL  https://github.com/Apkawa/userscripts
+// @supportURL   https://github.com/Apkawa/userscripts/issues
+// @downloadURL  https://github.com/Apkawa/userscripts/raw/master/dist/pikabu.ru/video_url.user.js
+// @updateURL    https://github.com/Apkawa/userscripts/raw/master/dist/pikabu.ru/video_url.user.js
+// ==/UserScript==
 (() => {
     "use strict";
     function waitElement(match, callback, root = document.body) {
