@@ -152,6 +152,18 @@ export function E(
   return element;
 }
 
+export function createElementFromHTML(htmlString: string): Node {
+  const div = document.createElement('div');
+  div.innerHTML = htmlString.trim();
+
+  // Change this to div.childNodes to support multiple top-level nodes.
+  if (div.firstChild) {
+    return div.firstChild as Node;
+  } else {
+    throw 'oops';
+  }
+}
+
 export type InsertPosition = 'before' | 'after' | 'appendChild';
 
 export interface ElementGetOrCreateOptions {

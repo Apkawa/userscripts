@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Enchanted pikabu
+// @name         Enhanced pikabu
 // @namespace    http://tampermonkey.net/
 // @version      0.2
-// @description  Исправления пикабу. Возвращает кнопку Save обратно, перенос ответа на пост вверх.
+// @description  Улучшения пикабу. Возвращает кнопку Save обратно, перенос ответа на пост вверх.
 // @author       NosefU
 // @match        https://pikabu.ru/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=pikabu.ru

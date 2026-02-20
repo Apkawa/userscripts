@@ -13,7 +13,7 @@
     "lib": [
       "dom",
       "dom.iterable",
-      "es2018"
+      "es2021"
     ],
     "removeComments": true,
     "experimentalDecorators": true
