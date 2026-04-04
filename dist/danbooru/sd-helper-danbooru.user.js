@@ -58,7 +58,7 @@
         }
         return result;
     }
-    const EXCLUDED_TAGS = [ ".*censor.*", "commentary_request", "translation_request", "commentary", "absurdres", "lowres", "highres", "(hi|low|absurd|superabsurd)_res", "thumbnail", "wallpaper", "high_framerate", "incredibly_absurdres", "huge_filesize", "animated" ];
+    const EXCLUDED_TAGS = [ ".*censor.*", ".*_request", ".*commentary", "cursor (medium)", "character_name", "absurdres", "lowres", "highres", "(hi|low|absurd|superabsurd)_res", "thumbnail", "wallpaper", "high_framerate", "incredibly_absurdres", "huge_filesize", "animated", "dated", "signature", "(date|number)_pun", "twitter_username", "web_address", "watermark", "video", "sound", "commentary" ];
     const EXCLUDED_TAGS_RE = RegExp(`(:?${EXCLUDED_TAGS.join("|")})`);
     function escapePrompt(prompt) {
         return prompt.replaceAll(/[\(\)\[\]\{\}]/g, "\\$&");
@@ -73,7 +73,8 @@
         return section;
     }
     function renderClipboardButton(root_el, dataText, button_text, attr_name = "data-sd-tags") {
-        const button_el = createElementFromHTML(`<button ${attr_name}='${dataText}'>\n    ${button_text}</button>`);
+        const escapedText = escapePrompt(dataText);
+        const button_el = createElementFromHTML(`<button ${attr_name}='${escapedText}'>\n    ${button_text}</button>`);
         button_el.addEventListener("click", event => {
             const _this = event.currentTarget;
             const t = _this.getAttribute(attr_name);
@@ -113,8 +114,6 @@
     }
     function renderCopyTagsButton(el, tags) {
         let dataTags = filterTags(tags.split(" ")).join(", ");
-        console.log("123");
-        dataTags = escapePrompt(dataTags);
         el && renderClipboardButton(el, dataTags, "copy tags");
     }
     function renderCopyPostPrompt(tagList, el) {
@@ -137,7 +136,8 @@
                 document.querySelector("#subnav-menu")?.appendChild(createElementFromHTML(`\n        <a id='subnav-help' class='py-1.5 px-3 ' href='/posts/random'>Random</a>\n        `));
             },
             "^danbooru.donmai.us/posts/": () => {
-                renderCopyPostPrompt(danbooruGetSectionTagList(), document.querySelector("section.image-container picture"));
+                const img = document.querySelector("section[data-tags]");
+                renderCopyPostPrompt(danbooruGetSectionTagList(), img);
             },
             "^gelbooru.com/": () => {
                 const q = parseSearch();

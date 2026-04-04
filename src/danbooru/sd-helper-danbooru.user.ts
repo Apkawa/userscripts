@@ -24,9 +24,10 @@ import {e621GetSectionTagList} from './e621_net';
 
 const EXCLUDED_TAGS: string[] = [
   '.*censor.*',
-  'commentary_request',
-  'translation_request',
-  'commentary',
+  '.*_request',
+  '.*commentary',
+  'cursor (medium)',
+  'character_name',
   'absurdres',
   'lowres',
   'highres',
@@ -37,6 +38,15 @@ const EXCLUDED_TAGS: string[] = [
   'incredibly_absurdres',
   'huge_filesize',
   'animated',
+  'dated',
+  'signature',
+  '(date|number)_pun',
+  'twitter_username',
+  'web_address',
+  'watermark',
+  'video',
+  'sound',
+  'commentary',
 ];
 
 const EXCLUDED_TAGS_RE = RegExp(`(:?${EXCLUDED_TAGS.join('|')})`);
@@ -68,8 +78,9 @@ function renderClipboardButton(
   button_text: string,
   attr_name = 'data-sd-tags',
 ) {
+  const escapedText = escapePrompt(dataText);
   const button_el = createElementFromHTML(
-    `<button ${attr_name}='${dataText}'>
+    `<button ${attr_name}='${escapedText}'>
     ${button_text}</button>`,
   );
   button_el.addEventListener('click', (event) => {
@@ -124,9 +135,7 @@ function danbooruGetSectionTagList(): SectionTagList {
 }
 
 function renderCopyTagsButton(el: Element | null, tags: string) {
-  let dataTags = filterTags(tags.split(' ')).join(', ');
-  console.log('123');
-  dataTags = escapePrompt(dataTags);
+  const dataTags = filterTags(tags.split(' ')).join(', ');
 
   el && renderClipboardButton(el, dataTags, 'copy tags');
 }
@@ -161,10 +170,8 @@ function renderCopyPostPrompt(tagList: SectionTagList, el: Element | null) {
       );
     },
     '^danbooru.donmai.us/posts/': () => {
-      renderCopyPostPrompt(
-        danbooruGetSectionTagList(),
-        document.querySelector('section.image-container picture'),
-      );
+      const img = document.querySelector('section[data-tags]');
+      renderCopyPostPrompt(danbooruGetSectionTagList(), img);
     },
     '^gelbooru.com/': () => {
       const q = parseSearch();
