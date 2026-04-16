@@ -19,7 +19,7 @@
 // @license      MIT
 // ==/UserScript==
 // src/civitai.com/copy-download-link-as-aria2c.user.ts
-(function() {
+(() => {
   const DOWNLOAD_SELECTOR = 'a[href^="/api/download/"]';
   const PROCESSED_ATTR = "data-aria2c-processed";
   const BUTTON_TEXT = "\uD83D\uDCCB aria2c";

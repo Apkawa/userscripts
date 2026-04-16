@@ -8,7 +8,7 @@ type FilterStartingWith<Set, Needle extends string> = Set extends `${Needle}${in
   ? Set
   : never;
 
-type EventHandler = Pick<GlobalEventHandlers, FilterStartingWith<keyof GlobalEventHandlers, 'on'>>;
+type EventHandler = Pick<GlobalEventHandlers, FilterStartingWith<keyof GlobalEventHandlers, "on">>;
 
 type EventHandlerName = keyof EventHandler;
 
@@ -20,7 +20,7 @@ export interface EventListenersResult {
 
 export function listAllEventListeners() {
   const allElements: ElementNode[] = [];
-  document.querySelectorAll('*').forEach((e) => allElements.push(e as ElementNode));
+  document.querySelectorAll("*").forEach((e) => allElements.push(e as ElementNode));
   allElements.push(document);
   allElements.push(window);
   const types: EventHandlerName[] = [];
@@ -34,7 +34,7 @@ export function listAllEventListeners() {
     const currentElement = allElements[i];
     for (const t of types) {
       const cb = currentElement[t];
-      if (typeof cb === 'function') {
+      if (typeof cb === "function") {
         elements.push({
           node: currentElement,
           type: t,
@@ -44,7 +44,5 @@ export function listAllEventListeners() {
     }
   }
 
-  return elements.sort(function (a, b) {
-    return a.type.localeCompare(b.type);
-  });
+  return elements.sort((a, b) => a.type.localeCompare(b.type));
 }

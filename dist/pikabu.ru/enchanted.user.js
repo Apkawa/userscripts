@@ -95,6 +95,18 @@ function E(tag, attributes = {}, ...children) {
   element.appendChild(fragment);
   return element;
 }
+// src/utils/GM.ts
+function GM_addStyle(css) {
+  const style = document.getElementById("GM_addStyleBy8626") || (() => {
+    const style2 = document.createElement("style");
+    style2.type = "text/css";
+    style2.id = "GM_addStyleBy8626";
+    document.head.appendChild(style2);
+    return style2;
+  })();
+  const sheet = style.sheet;
+  sheet?.insertRule(css, (sheet.rules || sheet.cssRules || []).length);
+}
 // node_modules/rxjs/_esm5/internal/util/isFunction.js
 function isFunction(x) {
   return typeof x === "function";
@@ -111,18 +123,6 @@ function matchLocation(...patterns) {
     }
   }
   return false;
-}
-// src/utils/GM.ts
-function GM_addStyle(css) {
-  const style = document.getElementById("GM_addStyleBy8626") || function() {
-    const style2 = document.createElement("style");
-    style2.type = "text/css";
-    style2.id = "GM_addStyleBy8626";
-    document.head.appendChild(style2);
-    return style2;
-  }();
-  const sheet = style.sheet;
-  sheet?.insertRule(css, (sheet.rules || sheet.cssRules || []).length);
 }
 // src/pikabu.ru/assets/save-icon.svg
 var save_icon_default = `<svg class='svg-icon' style='fill: currentColor;' viewBox='0 0 1024 1024' version='1.1'\r
@@ -149,7 +149,7 @@ function fixSaveButton() {
       storyFooter.prepend(saveButton);
     }
   }
-  const observerCallback = function(mutationsList) {
+  const observerCallback = (mutationsList) => {
     for (const mutation of mutationsList) {
       if (mutation.type !== "childList") {
         continue;
@@ -183,7 +183,7 @@ function fixReplyComment() {
     }
   });
 }
-(function() {
+(() => {
   const prefix = "^https://pikabu.ru";
   if (!matchLocation(prefix + "/.*")) {
     return;

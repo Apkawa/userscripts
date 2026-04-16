@@ -9,12 +9,10 @@
 // @match        https://pikabu.ru/*
 // ==/UserScript==
 
-import {matchLocation, waitElement} from '../utils';
+import { matchLocation, waitElement } from "../utils";
 
-(function () {
-  'use strict';
-
-  if (!matchLocation('^https://pikabu.ru/.*')) {
+(() => {
+  if (!matchLocation("^https://pikabu.ru/.*")) {
     return;
   }
 
@@ -22,12 +20,12 @@ import {matchLocation, waitElement} from '../utils';
     if (!event.target) return false;
 
     const target = event.target as HTMLElement;
-    return target.querySelector('.image-loaded') || target.classList.contains('image-loaded');
+    return target.querySelector(".image-loaded") || target.classList.contains("image-loaded");
   }
 
   window.addEventListener(
-    'contextmenu',
-    function (event) {
+    "contextmenu",
+    (event) => {
       if (isImage(event)) {
         event.stopImmediatePropagation();
       }
@@ -36,8 +34,8 @@ import {matchLocation, waitElement} from '../utils';
   );
 
   window.addEventListener(
-    'mouseenter',
-    function (event) {
+    "mouseenter",
+    (event) => {
       if (isImage(event)) {
         event.stopImmediatePropagation();
       }

@@ -13,44 +13,42 @@
 // @connect      ://*.civitai.com
 // ==/UserScript==
 
-(function () {
-  'use strict';
-
+(() => {
   // Конфигурация
   const DOWNLOAD_SELECTOR = 'a[href^="/api/download/"]';
-  const PROCESSED_ATTR = 'data-aria2c-processed';
-  const BUTTON_TEXT = '📋 aria2c';
+  const PROCESSED_ATTR = "data-aria2c-processed";
+  const BUTTON_TEXT = "📋 aria2c";
 
   /**
    * Функция для показа уведомления
    */
   function showNotification(message: string, isError = false): void {
-    const notification = document.createElement('div');
+    const notification = document.createElement("div");
     notification.textContent = message;
-    notification.style.position = 'fixed';
-    notification.style.bottom = '20px';
-    notification.style.right = '20px';
-    notification.style.backgroundColor = isError ? '#f44336' : '#4caf50';
-    notification.style.color = 'white';
-    notification.style.padding = '10px 20px';
-    notification.style.borderRadius = '5px';
-    notification.style.zIndex = '10000';
-    notification.style.fontFamily = 'sans-serif';
-    notification.style.fontSize = '14px';
-    notification.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-    notification.style.opacity = '0';
-    notification.style.transition = 'opacity 0.3s';
+    notification.style.position = "fixed";
+    notification.style.bottom = "20px";
+    notification.style.right = "20px";
+    notification.style.backgroundColor = isError ? "#f44336" : "#4caf50";
+    notification.style.color = "white";
+    notification.style.padding = "10px 20px";
+    notification.style.borderRadius = "5px";
+    notification.style.zIndex = "10000";
+    notification.style.fontFamily = "sans-serif";
+    notification.style.fontSize = "14px";
+    notification.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
+    notification.style.opacity = "0";
+    notification.style.transition = "opacity 0.3s";
     document.body.appendChild(notification);
 
     // Force reflow to ensure transition works
     notification.getBoundingClientRect();
 
     setTimeout(() => {
-      notification.style.opacity = '1';
+      notification.style.opacity = "1";
     }, 10);
 
     setTimeout(() => {
-      notification.style.opacity = '0';
+      notification.style.opacity = "0";
       setTimeout(() => notification.remove(), 300);
     }, 2000);
   }
@@ -63,15 +61,15 @@
       const urlObj = new URL(url);
       let pathname = urlObj.pathname;
       // Убираем завершающий слэш, если есть
-      if (pathname.endsWith('/')) pathname = pathname.slice(0, -1);
-      const segments = pathname.split('/');
-      let filename = segments.pop() || '';
+      if (pathname.endsWith("/")) pathname = pathname.slice(0, -1);
+      const segments = pathname.split("/");
+      let filename = segments.pop() || "";
       // Декодируем URL-кодировку (например, %20 -> пробел)
       filename = decodeURIComponent(filename);
       return filename;
     } catch (e) {
-      console.error('Error parsing URL for filename:', e);
-      return 'unknown_file';
+      console.error("Error parsing URL for filename:", e);
+      return "unknown_file";
     }
   }
 
@@ -81,11 +79,11 @@
   async function handleCopy(linkElement: HTMLAnchorElement, originalUrl: string): Promise<void> {
     const absoluteUrl = new URL(originalUrl, window.location.origin).href;
     try {
-      showNotification('Получение прямой ссылки...', false);
+      showNotification("Получение прямой ссылки...", false);
 
       const finalUrl = await new Promise<string>((resolve, reject) => {
         GM_xmlhttpRequest({
-          method: 'HEAD',
+          method: "HEAD",
           url: absoluteUrl,
           onload: (response) => {
             // response.finalUrl содержит URL после всех редиректов
@@ -102,8 +100,8 @@
       await navigator.clipboard.writeText(aria2cText);
       showNotification(`Скопировано! ${filename}`, false);
     } catch (error) {
-      console.error('Ошибка при получении ссылки:', error);
-      showNotification('Ошибка: не удалось получить прямую ссылку. Проверьте консоль.', true);
+      console.error("Ошибка при получении ссылки:", error);
+      showNotification("Ошибка: не удалось получить прямую ссылку. Проверьте консоль.", true);
     }
   }
 
@@ -112,28 +110,28 @@
    */
   function addButtonToLink(linkElement: HTMLAnchorElement): void {
     if (linkElement.hasAttribute(PROCESSED_ATTR)) return;
-    linkElement.setAttribute(PROCESSED_ATTR, 'true');
+    linkElement.setAttribute(PROCESSED_ATTR, "true");
 
-    const button = document.createElement('button');
+    const button = document.createElement("button");
     button.textContent = BUTTON_TEXT;
-    button.style.marginLeft = '8px';
-    button.style.padding = '4px 8px';
-    button.style.fontSize = '12px';
-    button.style.cursor = 'pointer';
-    button.style.backgroundColor = '#2c2c2c';
-    button.style.color = '#fff';
-    button.style.border = 'none';
-    button.style.borderRadius = '4px';
-    button.style.transition = 'background-color 0.2s';
+    button.style.marginLeft = "8px";
+    button.style.padding = "4px 8px";
+    button.style.fontSize = "12px";
+    button.style.cursor = "pointer";
+    button.style.backgroundColor = "#2c2c2c";
+    button.style.color = "#fff";
+    button.style.border = "none";
+    button.style.borderRadius = "4px";
+    button.style.transition = "background-color 0.2s";
 
-    button.addEventListener('mouseenter', () => (button.style.backgroundColor = '#555'));
-    button.addEventListener('mouseleave', () => (button.style.backgroundColor = '#2c2c2c'));
+    button.addEventListener("mouseenter", () => (button.style.backgroundColor = "#555"));
+    button.addEventListener("mouseleave", () => (button.style.backgroundColor = "#2c2c2c"));
 
     // Обработчик клика
-    button.addEventListener('click', (e: MouseEvent) => {
+    button.addEventListener("click", (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const href = linkElement.getAttribute('href');
+      const href = linkElement.getAttribute("href");
       if (href) {
         void handleCopy(linkElement, href);
       }
@@ -141,7 +139,7 @@
 
     // Вставляем кнопку после ссылки (оборачиваем при необходимости)
     const parent = linkElement.parentNode;
-    if (parent && parent.tagName !== 'BUTTON') {
+    if (parent && parent.tagName !== "BUTTON") {
       // Если ссылка находится внутри контейнера, который может ломать inline-расположение,
       // пробуем вставить как соседний элемент
       if (linkElement.nextSibling) {
@@ -151,7 +149,7 @@
       }
     } else {
       // Запасной вариант: вставить после ссылки в любом случае
-      linkElement.insertAdjacentElement('afterend', button);
+      linkElement.insertAdjacentElement("afterend", button);
     }
   }
 
@@ -170,7 +168,7 @@
     const observer = new MutationObserver((mutations) => {
       let shouldProcess = false;
       for (const mutation of mutations) {
-        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+        if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
           shouldProcess = true;
           break;
         }
@@ -179,7 +177,7 @@
         processAllLinks();
       }
     });
-    observer.observe(document.body, {childList: true, subtree: true});
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
   /**
@@ -191,8 +189,8 @@
   }
 
   // Запуск после полной загрузки DOM
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
   } else {
     init();
   }

@@ -1,13 +1,13 @@
-import {expect, test, describe} from 'bun:test';
-import {matchLocation} from './location';
+import { describe, expect, test } from "bun:test";
+import { matchLocation } from "./location";
 
-describe('matchLocation', () => {
+describe("matchLocation", () => {
   // beforeEach(() => {
   //   location = document.location;
   //   jest.spyOn(document, 'location', 'get').mockRestore();
   // });
-  test('matchLocation', () => {
-    expect(matchLocation('^https://example.com/.*')).toBe(false);
+  test("matchLocation", () => {
+    expect(matchLocation("^https://example.com/.*")).toBe(false);
     // const mockedLocation = {
     //   ...location,
     //   protocol: 'https:',

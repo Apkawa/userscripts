@@ -10,9 +10,7 @@
 //
 // ==/UserScript==
 
-(function () {
-  'use strict';
-
+(() => {
   // ========== Styles for the button ==========
   GM_addStyle(`
         .aria2c-copy-btn {
@@ -38,19 +36,19 @@
    * @param {string} url - The download URL.
    * @returns {{owner: string, filename: string}} The owner and filename.
    */
-  function getOwnerAndFilename(url: string): {owner: string; filename: string} {
+  function getOwnerAndFilename(url: string): { owner: string; filename: string } {
     try {
       const parsed = new URL(url);
-      const pathParts = parsed.pathname.split('/').filter((p) => p);
+      const pathParts = parsed.pathname.split("/").filter((p) => p);
       // Expected path: /owner/repo/resolve/revision/.../filename
       // Owner is the first part
-      const owner = pathParts[0] || 'unknown';
+      const owner = pathParts[0] || "unknown";
       // Filename is the last part of the path
-      const filename = pathParts[pathParts.length - 1] || 'file';
-      return {owner, filename};
+      const filename = pathParts[pathParts.length - 1] || "file";
+      return { owner, filename };
     } catch (e) {
-      console.warn('Failed to parse URL:', url, e);
-      return {owner: 'unknown', filename: 'file'};
+      console.warn("Failed to parse URL:", url, e);
+      return { owner: "unknown", filename: "file" };
     }
   }
 
@@ -63,12 +61,12 @@
     // Resolve relative URLs
     const url = new URL(originalUrl, window.location.href);
     // Ensure download=true parameter is present
-    if (url.searchParams.get('download') !== 'true') {
-      url.searchParams.set('download', 'true');
+    if (url.searchParams.get("download") !== "true") {
+      url.searchParams.set("download", "true");
     }
     const finalUrl = url.toString();
 
-    const {owner, filename} = getOwnerAndFilename(finalUrl);
+    const { owner, filename } = getOwnerAndFilename(finalUrl);
     return `${finalUrl}\n    out=${owner}_${filename}`;
   }
 
@@ -80,35 +78,35 @@
     try {
       await navigator.clipboard.writeText(text);
       // Use GM_notification if available, otherwise fallback to alert
-      if (typeof GM_notification !== 'undefined') {
+      if (typeof GM_notification !== "undefined") {
         GM_notification(
           {
-            text: 'aria2c command copied to clipboard!',
+            text: "aria2c command copied to clipboard!",
             timeout: 2000,
-            title: 'Copied',
+            title: "Copied",
           },
           () => {
             return true;
           },
         );
       } else {
-        const msg = document.createElement('div');
-        msg.textContent = '✓ aria2c command copied!';
-        msg.style.position = 'fixed';
-        msg.style.bottom = '20px';
-        msg.style.right = '20px';
-        msg.style.backgroundColor = '#4caf50';
-        msg.style.color = 'white';
-        msg.style.padding = '8px 12px';
-        msg.style.borderRadius = '4px';
-        msg.style.zIndex = '10000';
-        msg.style.fontSize = '14px';
+        const msg = document.createElement("div");
+        msg.textContent = "✓ aria2c command copied!";
+        msg.style.position = "fixed";
+        msg.style.bottom = "20px";
+        msg.style.right = "20px";
+        msg.style.backgroundColor = "#4caf50";
+        msg.style.color = "white";
+        msg.style.padding = "8px 12px";
+        msg.style.borderRadius = "4px";
+        msg.style.zIndex = "10000";
+        msg.style.fontSize = "14px";
         document.body.appendChild(msg);
         setTimeout(() => msg.remove(), 2000);
       }
     } catch (err) {
-      console.error('Failed to copy:', err);
-      alert('Failed to copy to clipboard. See console for details.');
+      console.error("Failed to copy:", err);
+      alert("Failed to copy to clipboard. See console for details.");
     }
   }
 
@@ -119,12 +117,12 @@
    */
   function isDownloadLink(link: HTMLAnchorElement): boolean {
     // Condition 1: has download attribute
-    if (link.hasAttribute('download')) return true;
+    if (link.hasAttribute("download")) return true;
 
     // Condition 2: href contains ?download=true (as a parameter)
     try {
       const url = new URL(link.href, window.location.href);
-      return url.searchParams.get('download') === 'true';
+      return url.searchParams.get("download") === "true";
     } catch (e) {
       return false;
     }
@@ -136,23 +134,23 @@
    */
   function addButtonToLink(link: HTMLAnchorElement): void {
     // Avoid duplicate processing
-    if (link.hasAttribute('data-aria2c-processed')) return;
-    link.setAttribute('data-aria2c-processed', 'true');
+    if (link.hasAttribute("data-aria2c-processed")) return;
+    link.setAttribute("data-aria2c-processed", "true");
 
     // Create the button
-    const button = document.createElement('button');
-    button.textContent = '📋 aria2c';
-    button.className = 'aria2c-copy-btn';
+    const button = document.createElement("button");
+    button.textContent = "📋 aria2c";
+    button.className = "aria2c-copy-btn";
 
     // Attach click handler
-    button.addEventListener('click', async (event: MouseEvent) => {
+    button.addEventListener("click", async (event: MouseEvent) => {
       event.stopPropagation();
       const text = await generateAria2cText(link.href);
       await copyToClipboard(text);
     });
 
     // Insert after the link
-    link.insertAdjacentElement('afterend', button);
+    link.insertAdjacentElement("afterend", button);
   }
 
   /**
@@ -176,11 +174,11 @@
     const anchors: HTMLAnchorElement[] = [];
     if (node.nodeType === Node.ELEMENT_NODE) {
       const element = node as HTMLElement;
-      if (element.tagName === 'A') {
+      if (element.tagName === "A") {
         anchors.push(element as HTMLAnchorElement);
       }
       // Recursively collect from children
-      element.querySelectorAll('a').forEach((a) => anchors.push(a));
+      element.querySelectorAll("a").forEach((a) => anchors.push(a));
     }
     return anchors;
   }
@@ -189,7 +187,7 @@
    * Process all download links on the page (for initial load).
    */
   function processAllLinks(): void {
-    const allLinks = document.querySelectorAll('a');
+    const allLinks = document.querySelectorAll("a");
     processLinks(Array.from(allLinks));
   }
 
@@ -201,7 +199,7 @@
         const anchors = findAnchorsInNode(addedNode);
         for (const a of anchors) {
           // Avoid reprocessing already handled links
-          if (!a.hasAttribute('data-aria2c-processed')) {
+          if (!a.hasAttribute("data-aria2c-processed")) {
             newLinks.push(a);
           }
         }
@@ -213,7 +211,7 @@
   });
 
   // Start observing after page load
-  window.addEventListener('load', () => {
+  window.addEventListener("load", () => {
     processAllLinks();
     observer.observe(document.body, {
       childList: true,

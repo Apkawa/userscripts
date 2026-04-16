@@ -16,7 +16,7 @@
 // @license      MIT
 // ==/UserScript==
 // src/huggingface.co/copy-download-link-as-aria2c.user.ts
-(function() {
+(() => {
   GM_addStyle(`
         .aria2c-copy-btn {
             margin-left: 8px;

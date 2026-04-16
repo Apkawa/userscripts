@@ -3,7 +3,7 @@
     "target": "es2021",
     "module": "esnext",
     "moduleResolution": "bundler",
-    "types": ["bun-types", "./tampermonkey-module.d.ts"],
+    "types": ["bun", "bun-types", "./tampermonkey-module.d.ts"],
     "allowImportingTsExtensions": true,
     "rootDir": ".",
     "paths": {

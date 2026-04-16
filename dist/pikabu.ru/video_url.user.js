@@ -74,7 +74,7 @@ function matchLocation(...patterns) {
 var entries = Object.entries;
 
 // src/pikabu.ru/video_url.user.ts
-(function() {
+(() => {
   if (!matchLocation("^https://pikabu.ru/.*")) {
     return;
   }

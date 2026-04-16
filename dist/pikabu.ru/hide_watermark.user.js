@@ -71,7 +71,7 @@ function matchLocation(...patterns) {
   return false;
 }
 // src/pikabu.ru/hide_watermark.user.ts
-(function() {
+(() => {
   if (!matchLocation("^https://pikabu.ru/.*")) {
     return;
   }
@@ -81,12 +81,12 @@ function matchLocation(...patterns) {
     const target = event.target;
     return target.querySelector(".image-loaded") || target.classList.contains("image-loaded");
   }
-  window.addEventListener("contextmenu", function(event) {
+  window.addEventListener("contextmenu", (event) => {
     if (isImage(event)) {
       event.stopImmediatePropagation();
     }
   }, true);
-  window.addEventListener("mouseenter", function(event) {
+  window.addEventListener("mouseenter", (event) => {
     if (isImage(event)) {
       event.stopImmediatePropagation();
     }

@@ -1,43 +1,32 @@
-import {Glob, spawnSync} from 'bun';
-import fs from 'node:fs';
-import path from 'node:path';
-import {buildUserScriptMeta, getUserscriptDebugLink} from './utils';
+import { Glob } from "bun";
+import fs from "node:fs";
+import path from "node:path";
+import { buildUserScriptMeta, getUserscriptDebugLink } from "./utils";
 
 const projectRoot = path.resolve(path.dirname(import.meta.dir));
-const srcRoot = path.resolve(projectRoot, 'src');
+const srcRoot = path.resolve(projectRoot, "src");
 
 const isWatchMode = !!process.env.WATCH;
 
-function checkTypes() {
-  console.log('🧐 Проверка типов...');
-  const check = spawnSync(['bun', 'x', 'tsc', '--noEmit']);
-
-  if (!check.success) {
-    console.error('❌ Ошибка в типах TypeScript:');
-    console.error(check.stderr.toString());
-    process.exit(1); // Останавливаем сборку
-  }
-}
-
 async function buildAll() {
   // 1. Находим все юзерскрипты
-  const glob = new Glob('src/**/*.user.{ts,js}');
+  const glob = new Glob("src/**/*.user.{ts,js}");
 
   // Функция для генерации баннера (можно импортировать из вашего существующего модуля)
 
   console.log(srcRoot);
-  console.log('🚀 Начинаю сборку...');
+  console.log("🚀 Начинаю сборку...");
 
-  for (const file of glob.scanSync('.')) {
+  for (const file of glob.scanSync(".")) {
     const fullPath = path.resolve(file);
     const relPath = path.relative(srcRoot, fullPath);
 
     // Определяем имя выходного файла (сохраняя структуру папок)
-    const outName = relPath.replace(/\.[tj]s$/, '.js');
+    const outName = relPath.replace(/\.[tj]s$/, ".js");
 
-    const tsFile = path.join(path.dirname(fullPath), path.basename(outName, '.js') + '.js');
+    const tsFile = path.join(path.dirname(fullPath), path.basename(outName, ".js") + ".js");
     // console.log(file, tsFile);
-    if (file.endsWith('.js') && fs.existsSync(tsFile)) {
+    if (file.endsWith(".js") && fs.existsSync(tsFile)) {
       console.log(`SKIP ${relPath}, ts файл с таким же именем существует.`);
       continue;
     }
@@ -56,7 +45,7 @@ async function buildAll() {
       const banner = buildUserScriptMeta(fullPath);
 
       // 3. Записываем файл с баннером
-      await Bun.write(outPath, banner + '\n' + buildOutput);
+      await Bun.write(outPath, banner + "\n" + buildOutput);
       console.log(`✅ Собрано: ${outPath}`);
       console.log(`🔗 Добавляем в debug.js
 // @require ${getUserscriptDebugLink(outPath)}`);
@@ -67,8 +56,8 @@ async function buildAll() {
 }
 
 if (isWatchMode) {
-  fs.watch(srcRoot, {recursive: true}, (event, filename) => {
-    if (filename?.endsWith('.ts') || filename?.endsWith('.js')) {
+  fs.watch(srcRoot, { recursive: true }, (event, filename) => {
+    if (filename?.endsWith(".ts") || filename?.endsWith(".js")) {
       console.log(`\n🔄 Файл ${filename} изменен...`);
       buildAll();
     }

@@ -103,7 +103,7 @@ var EXCLUDED_TAGS = [
 ];
 var EXCLUDED_TAGS_RE = RegExp(`(:?${EXCLUDED_TAGS.join("|")})`);
 function escapePrompt(prompt) {
-  return prompt.replaceAll(/[\(\)\[\]\{\}]/g, "\\$&");
+  return prompt.replaceAll(/[()[\]{}]/g, "\\$&");
 }
 function filterTags(tags) {
   return tags.filter((t) => !EXCLUDED_TAGS_RE.test(t));
@@ -184,7 +184,7 @@ function renderCopyPostPrompt(tagList, el) {
   }
   el && renderClipboardButton(el, prompt, "copy prompt");
 }
-(function() {
+(() => {
   mapLocation({
     "^danbooru.donmai.us/": () => {
       const imgs = document.querySelectorAll("[data-tags]");

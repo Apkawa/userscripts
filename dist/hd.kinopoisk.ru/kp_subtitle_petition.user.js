@@ -34,7 +34,7 @@ function getElementsByXpath(xpath, root = document) {
   return result;
 }
 function markElementHandled(wrapFn, attrName = "_handled") {
-  return function(el) {
+  return (el) => {
     if (el.getAttribute(attrName)) {
       return;
     }
@@ -191,7 +191,7 @@ function renderKinopoiskRequestLink(sub) {
     sub.appendChild(li);
   }
 }
-(function() {
+(() => {
   console.warn("DEPRECATED");
   mapLocation({
     "^forms.yandex.ru/": () => {

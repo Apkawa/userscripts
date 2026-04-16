@@ -15,7 +15,7 @@
 // @license      MIT
 // ==/UserScript==
 // src/chub.ai/chub.ai_downloader_helper.user.ts
-(function() {
+(() => {
   async function downloadImage(url, filename) {
     try {
       const response = await fetch(url, { signal: AbortSignal.timeout(600000) });

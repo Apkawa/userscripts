@@ -16,45 +16,45 @@
 
 // ==/UserScript==
 
-import {entries, mapLocation, parseSearch} from '../utils';
-import {createElementFromHTML} from '../utils/dom';
-import {capitalize} from '../utils/string';
-import {SectionTagList, TagList} from './types';
-import {e621GetSectionTagList} from './e621_net';
+import { entries, mapLocation, parseSearch } from "../utils";
+import { createElementFromHTML } from "../utils/dom";
+import { capitalize } from "../utils/string";
+import { e621GetSectionTagList } from "./e621_net";
+import type { SectionTagList, TagList } from "./types";
 
 const EXCLUDED_TAGS: string[] = [
-  '.*censor.*',
-  '.*_request',
-  '.*commentary',
-  'cursor (medium)',
-  'character_name',
-  'absurdres',
-  'lowres',
-  'highres',
-  '(hi|low|absurd|superabsurd)_res',
-  'thumbnail',
-  'wallpaper',
-  'high_framerate',
-  'incredibly_absurdres',
-  'huge_filesize',
-  'animated',
-  'dated',
-  'signature',
-  '(date|number)_pun',
-  'twitter_username',
-  'web_address',
-  'watermark',
-  'video',
-  'sound',
-  'commentary',
+  ".*censor.*",
+  ".*_request",
+  ".*commentary",
+  "cursor (medium)",
+  "character_name",
+  "absurdres",
+  "lowres",
+  "highres",
+  "(hi|low|absurd|superabsurd)_res",
+  "thumbnail",
+  "wallpaper",
+  "high_framerate",
+  "incredibly_absurdres",
+  "huge_filesize",
+  "animated",
+  "dated",
+  "signature",
+  "(date|number)_pun",
+  "twitter_username",
+  "web_address",
+  "watermark",
+  "video",
+  "sound",
+  "commentary",
 ];
 
-const EXCLUDED_TAGS_RE = RegExp(`(:?${EXCLUDED_TAGS.join('|')})`);
+const EXCLUDED_TAGS_RE = RegExp(`(:?${EXCLUDED_TAGS.join("|")})`);
 
 function escapePrompt(prompt: string): string {
   // Escape brackets
   // eslint-disable-next-line no-useless-escape
-  return prompt.replaceAll(/[\(\)\[\]\{\}]/g, '\\$&');
+  return prompt.replaceAll(/[()[\]{}]/g, "\\$&");
 }
 
 function filterTags(tags: TagList) {
@@ -62,9 +62,9 @@ function filterTags(tags: TagList) {
 }
 
 function filterSections(section: SectionTagList): SectionTagList {
-  const excludedSections = ['Meta', 'Metadata'];
-  if (section['Copyright']?.[0] == 'original') {
-    excludedSections.push('Copyright');
+  const excludedSections = ["Meta", "Metadata"];
+  if (section["Copyright"]?.[0] == "original") {
+    excludedSections.push("Copyright");
   }
   for (const n of excludedSections) {
     delete section[n];
@@ -76,14 +76,14 @@ function renderClipboardButton(
   root_el: Element,
   dataText: string,
   button_text: string,
-  attr_name = 'data-sd-tags',
+  attr_name = "data-sd-tags",
 ) {
   const escapedText = escapePrompt(dataText);
   const button_el = createElementFromHTML(
     `<button ${attr_name}='${escapedText}'>
     ${button_text}</button>`,
   );
-  button_el.addEventListener('click', (event) => {
+  button_el.addEventListener("click", (event) => {
     const _this = event.currentTarget as HTMLElement;
     const t = _this.getAttribute(attr_name);
     t && void navigator.clipboard.writeText(t);
@@ -96,11 +96,11 @@ function gelbooruGetSectionTagList(): SectionTagList {
   const result: SectionTagList = {};
   const tagList = document.querySelectorAll('ul.tag-list li[class^="tag-type"]');
   for (const tagEl of tagList) {
-    const sectionName = capitalize(tagEl.className.substr('tag-type-'.length).trim());
+    const sectionName = capitalize(tagEl.className.substr("tag-type-".length).trim());
     if (!result[sectionName]) {
       result[sectionName] = [];
     }
-    result[sectionName].push(tagEl.querySelector('& > a')?.innerHTML || '');
+    result[sectionName].push(tagEl.querySelector("& > a")?.innerHTML || "");
   }
   return result;
 }
@@ -109,10 +109,10 @@ function danbooruGetSectionTagList(): SectionTagList {
   const result: SectionTagList = {};
 
   // Находим секцию с тегами
-  const section = document.querySelector('section#tag-list');
+  const section = document.querySelector("section#tag-list");
   if (!section) return result;
 
-  const categories = section.querySelectorAll('ul');
+  const categories = section.querySelectorAll("ul");
   for (const category of categories) {
     // Находим следующий элемент после h3 (список ul с таким же классом)
     const listItems = category.querySelectorAll(`li`);
@@ -120,14 +120,14 @@ function danbooruGetSectionTagList(): SectionTagList {
       const tagList: TagList = [];
       // Парсим все элементы списка
       for (const item of listItems) {
-        const tagName = item.getAttribute('data-tag-name');
+        const tagName = item.getAttribute("data-tag-name");
 
         if (tagName) {
           // Получаем текст тега (убираем лишние пробелы)
           tagList.push(tagName);
         }
       }
-      const categoryName = capitalize(category.className.split('-tag-list')[0]);
+      const categoryName = capitalize(category.className.split("-tag-list")[0]);
       result[categoryName] = tagList;
     }
   }
@@ -135,68 +135,68 @@ function danbooruGetSectionTagList(): SectionTagList {
 }
 
 function renderCopyTagsButton(el: Element | null, tags: string) {
-  const dataTags = filterTags(tags.split(' ')).join(', ');
+  const dataTags = filterTags(tags.split(" ")).join(", ");
 
-  el && renderClipboardButton(el, dataTags, 'copy tags');
+  el && renderClipboardButton(el, dataTags, "copy tags");
 }
 
 function renderCopyPostPrompt(tagList: SectionTagList, el: Element | null) {
   const filteredSectionTagList = filterSections(tagList);
-  let prompt = '';
+  let prompt = "";
   for (const [section, tags] of entries(filteredSectionTagList)) {
     const filteredTags = filterTags(tags);
-    if (section == 'Artist') {
-      const animaArtist = filteredTags.map((t) => '@' + t);
-      prompt += `*${section}:* ${filteredTags.join(', ')}, ${animaArtist.join(', ')} \n`;
+    if (section == "Artist") {
+      const animaArtist = filteredTags.map((t) => "@" + t);
+      prompt += `*${section}:* ${filteredTags.join(", ")}, ${animaArtist.join(", ")} \n`;
     } else {
-      prompt += `*${section}:* ${filteredTags.join(', ')} \n`;
+      prompt += `*${section}:* ${filteredTags.join(", ")} \n`;
     }
   }
 
-  el && renderClipboardButton(el, prompt, 'copy prompt');
+  el && renderClipboardButton(el, prompt, "copy prompt");
 }
 
-(function () {
+(() => {
   mapLocation({
-    '^danbooru.donmai.us/': () => {
-      const imgs = document.querySelectorAll('[data-tags]');
+    "^danbooru.donmai.us/": () => {
+      const imgs = document.querySelectorAll("[data-tags]");
       for (const img of imgs) {
-        renderCopyTagsButton(img, img.getAttribute('data-tags') || '');
+        renderCopyTagsButton(img, img.getAttribute("data-tags") || "");
       }
-      document.querySelector('#subnav-menu')?.appendChild(
+      document.querySelector("#subnav-menu")?.appendChild(
         createElementFromHTML(`
         <a id='subnav-help' class='py-1.5 px-3 ' href='/posts/random'>Random</a>
         `),
       );
     },
-    '^danbooru.donmai.us/posts/': () => {
-      const img = document.querySelector('section[data-tags]');
+    "^danbooru.donmai.us/posts/": () => {
+      const img = document.querySelector("section[data-tags]");
       renderCopyPostPrompt(danbooruGetSectionTagList(), img);
     },
-    '^gelbooru.com/': () => {
+    "^gelbooru.com/": () => {
       const q = parseSearch();
-      if (q['page'] === 'post' && q['s'] === 'list') {
-        const imgs = document.querySelectorAll('article.thumbnail-preview img[title]');
+      if (q["page"] === "post" && q["s"] === "list") {
+        const imgs = document.querySelectorAll("article.thumbnail-preview img[title]");
         for (const img of imgs) {
-          renderCopyTagsButton(img.parentElement, img.getAttribute('title') || '');
+          renderCopyTagsButton(img.parentElement, img.getAttribute("title") || "");
         }
       }
-      if (q['page'] === 'post' && q['s'] === 'view') {
-        const img = document.querySelector('section[data-tags]');
-        renderCopyTagsButton(img, img?.getAttribute('data-tags') || '');
+      if (q["page"] === "post" && q["s"] === "view") {
+        const img = document.querySelector("section[data-tags]");
+        renderCopyTagsButton(img, img?.getAttribute("data-tags") || "");
 
         renderCopyPostPrompt(gelbooruGetSectionTagList(), img);
       }
     },
-    '^e621.net/posts': () => {
-      const imgs = document.querySelectorAll('section.posts-container article[data-tags]');
+    "^e621.net/posts": () => {
+      const imgs = document.querySelectorAll("section.posts-container article[data-tags]");
       for (const img of imgs) {
-        renderCopyTagsButton(img, img.getAttribute('data-tags') || '');
+        renderCopyTagsButton(img, img.getAttribute("data-tags") || "");
       }
     },
-    '^e621.net/posts/\\d+': () => {
-      const img = document.querySelector('section#image-container');
-      renderCopyTagsButton(img, img?.getAttribute('data-tags') || '');
+    "^e621.net/posts/\\d+": () => {
+      const img = document.querySelector("section#image-container");
+      renderCopyTagsButton(img, img?.getAttribute("data-tags") || "");
       renderCopyPostPrompt(e621GetSectionTagList(), img);
     },
   });

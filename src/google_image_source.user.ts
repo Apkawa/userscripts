@@ -16,4 +16,4 @@ function search(event: MouseEvent | KeyboardEvent) {
   console.log(event);
 }
 
-GM_registerMenuCommand('Image search on pixiv', search);
+GM_registerMenuCommand("Image search on pixiv", search);

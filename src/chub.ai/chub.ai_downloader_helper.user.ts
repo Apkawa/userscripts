@@ -9,16 +9,14 @@
 // @grant        none
 // ==/UserScript==
 
-(function () {
-  'use strict';
-
+(() => {
   async function downloadImage(url: string, filename: string): Promise<void> {
     try {
-      const response = await fetch(url, {signal: AbortSignal.timeout(600000)});
-      if (!response.ok) throw new Error('Network response was not ok');
+      const response = await fetch(url, { signal: AbortSignal.timeout(600000) });
+      if (!response.ok) throw new Error("Network response was not ok");
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = blobUrl;
       a.download = filename;
       document.body.appendChild(a);
@@ -26,8 +24,8 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error('Download failed, opening in new tab instead', error);
-      window.open(url, '_blank');
+      console.error("Download failed, opening in new tab instead", error);
+      window.open(url, "_blank");
     }
   }
 
@@ -43,25 +41,25 @@
 
       // 1) Ignore plain avatars
       if (
-        src.startsWith('https://avatars.charhub.io/avatars/Anonymous/example-character/') || // Заглушка
-        src.startsWith('https://avatars.charhub.io/avatars/users/avatars/plain/')
+        src.startsWith("https://avatars.charhub.io/avatars/Anonymous/example-character/") || // Заглушка
+        src.startsWith("https://avatars.charhub.io/avatars/users/avatars/plain/")
       )
         return;
 
-      const urlParts = src.split('/');
+      const urlParts = src.split("/");
       // Expected formats:
       // Char: [..., 'avatars', username, cardname, 'avatar.webp'] -> length 7
       // Lore: [..., 'avatars', 'lorebooks', username, name, 'avatar.webp'] -> length 8
       if (urlParts.length < 6) return;
 
-      let username: string = '';
-      let name: string = '';
-      let downloadUrl: string = '';
-      let filename: string = '';
+      let username: string = "";
+      let name: string = "";
+      let downloadUrl: string = "";
+      let filename: string = "";
       let isLorebook = false;
 
       // 2) Check if it's a lorebook
-      if (urlParts[4] === 'lorebooks') {
+      if (urlParts[4] === "lorebooks") {
         isLorebook = true;
         username = urlParts[5];
         name = urlParts[6];
@@ -71,7 +69,7 @@
         // Character card logic
         username = urlParts[4];
         name = urlParts[5];
-        downloadUrl = src.substring(0, src.lastIndexOf('/') + 1) + 'chara_card_v2.png';
+        downloadUrl = src.substring(0, src.lastIndexOf("/") + 1) + "chara_card_v2.png";
         filename = `${name}__${username}_spec_v2.png`;
       }
 
@@ -79,12 +77,12 @@
       if (!parent) return;
 
       const style = window.getComputedStyle(parent);
-      if (style.position === 'static') {
-        parent.style.position = 'relative';
+      if (style.position === "static") {
+        parent.style.position = "relative";
       }
 
-      const btn = document.createElement('button');
-      btn.innerHTML = '⬇️';
+      const btn = document.createElement("button");
+      btn.innerHTML = "⬇️";
       btn.title = `Download ${filename}`;
       btn.style.cssText = `
                 position: absolute;
@@ -112,18 +110,18 @@
           e.stopPropagation();
 
           btn.disabled = true;
-          btn.innerHTML = '⏳';
+          btn.innerHTML = "⏳";
 
           try {
             // Step 1: Get ID
             const idResponse = await fetch(
               `https://gateway.chub.ai/api/lorebooks/${username}/${name}`,
             );
-            if (!idResponse.ok) throw new Error('Failed to fetch lorebook ID');
-            const idData = (await idResponse.json()) as {node?: {id?: string}};
+            if (!idResponse.ok) throw new Error("Failed to fetch lorebook ID");
+            const idData = (await idResponse.json()) as { node?: { id?: string } };
 
             if (!idData.node || !idData.node.id)
-              throw new Error('Lorebook ID not found in API response');
+              throw new Error("Lorebook ID not found in API response");
             const id = idData.node.id;
 
             // Step 2: Get file URL
@@ -131,11 +129,11 @@
 
             await downloadImage(finalDownloadUrl, filename);
           } catch (error) {
-            console.error('Lorebook download error:', error);
-            alert('Error downloading lorebook. Check console for details.');
+            console.error("Lorebook download error:", error);
+            alert("Error downloading lorebook. Check console for details.");
           } finally {
             btn.disabled = false;
-            btn.innerHTML = '⬇️';
+            btn.innerHTML = "⬇️";
           }
         };
       } else {
@@ -148,7 +146,7 @@
       }
 
       parent.appendChild(btn);
-      img.dataset.downloaderAdded = 'true';
+      img.dataset.downloaderAdded = "true";
     });
   }
 
