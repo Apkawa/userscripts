@@ -160,7 +160,7 @@ export function createElementFromHTML(htmlString: string): Node {
   if (div.firstChild) {
     return div.firstChild as Node;
   } else {
-    throw 'oops';
+    throw new Error('No nodes found in HTML string');
   }
 }
 
@@ -201,7 +201,7 @@ export function copyElementToNewRoot(
     return;
   }
 
-  let elList: HTMLElement[] | NodeListOf<HTMLElement> = [];
+  let elList: HTMLElement[] | NodeListOf<HTMLElement>;
   if (el instanceof HTMLElement) {
     elList = [el];
   } else {

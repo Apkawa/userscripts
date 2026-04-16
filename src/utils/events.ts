@@ -20,7 +20,7 @@ export interface EventListenersResult {
 
 export function listAllEventListeners() {
   const allElements: ElementNode[] = [];
-  document.querySelectorAll('*').forEach((e) => allElements.push(e));
+  document.querySelectorAll('*').forEach((e) => allElements.push(e as ElementNode));
   allElements.push(document);
   allElements.push(window);
   const types: EventHandlerName[] = [];

@@ -2,20 +2,20 @@
   "compilerOptions": {
     "target": "es2021",
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
+    "types": ["bun-types", "./tampermonkey-module.d.ts"],
+    "allowImportingTsExtensions": true,
     "rootDir": ".",
-    "baseUrl": ".",
     "paths": {
       "@app/*": ["./src/*"]
     },
     "strict": true,
     "esModuleInterop": true,
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "es2021"
-    ],
+    "lib": ["dom", "dom.iterable", "ESNext"],
     "removeComments": true,
-    "experimentalDecorators": true
-  }
+    "experimentalDecorators": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

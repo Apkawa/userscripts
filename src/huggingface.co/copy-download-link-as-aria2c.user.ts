@@ -2,7 +2,7 @@
 // @name         Hugging Face Download Links to aria2c
 // @namespace    https://github.com/yourname
 // @version      1.0
-// @description  Adds a button next to download links on huggingface.co to copy an aria2c command line.
+// @description  Adds a button to download links on huggingface.co to copy an aria2c command line.
 // @author       YourName
 // @match        https://huggingface.co/*
 // @grant        GM_addStyle
@@ -38,7 +38,7 @@
    * @param {string} url - The download URL.
    * @returns {{owner: string, filename: string}} The owner and filename.
    */
-  function getOwnerAndFilename(url) {
+  function getOwnerAndFilename(url: string): {owner: string; filename: string} {
     try {
       const parsed = new URL(url);
       const pathParts = parsed.pathname.split('/').filter((p) => p);
@@ -57,9 +57,9 @@
   /**
    * Generates the aria2c format text for a given download URL.
    * @param {string} originalUrl - The original href of the link.
-   * @returns {string} The text to copy.
+   * @returns {Promise<string>} The text to copy.
    */
-  async function generateAria2cText(originalUrl) {
+  async function generateAria2cText(originalUrl: string): Promise<string> {
     // Resolve relative URLs
     const url = new URL(originalUrl, window.location.href);
     // Ensure download=true parameter is present
@@ -76,16 +76,21 @@
    * Copies text to clipboard and shows a notification.
    * @param {string} text - The text to copy.
    */
-  async function copyToClipboard(text) {
+  async function copyToClipboard(text: string): Promise<void> {
     try {
       await navigator.clipboard.writeText(text);
       // Use GM_notification if available, otherwise fallback to alert
       if (typeof GM_notification !== 'undefined') {
-        GM_notification({
-          text: 'aria2c command copied to clipboard!',
-          timeout: 2000,
-          title: 'Copied',
-        });
+        GM_notification(
+          {
+            text: 'aria2c command copied to clipboard!',
+            timeout: 2000,
+            title: 'Copied',
+          },
+          () => {
+            return true;
+          },
+        );
       } else {
         const msg = document.createElement('div');
         msg.textContent = '✓ aria2c command copied!';
@@ -112,7 +117,7 @@
    * @param {HTMLAnchorElement} link - The anchor element.
    * @returns {boolean} True if it should be considered a download link.
    */
-  function isDownloadLink(link) {
+  function isDownloadLink(link: HTMLAnchorElement): boolean {
     // Condition 1: has download attribute
     if (link.hasAttribute('download')) return true;
 
@@ -129,7 +134,7 @@
    * Adds a copy button next to a download link if not already present.
    * @param {HTMLAnchorElement} link - The anchor element.
    */
-  function addButtonToLink(link) {
+  function addButtonToLink(link: HTMLAnchorElement): void {
     // Avoid duplicate processing
     if (link.hasAttribute('data-aria2c-processed')) return;
     link.setAttribute('data-aria2c-processed', 'true');
@@ -140,7 +145,7 @@
     button.className = 'aria2c-copy-btn';
 
     // Attach click handler
-    button.addEventListener('click', async (event) => {
+    button.addEventListener('click', async (event: MouseEvent) => {
       event.stopPropagation();
       const text = await generateAria2cText(link.href);
       await copyToClipboard(text);
@@ -152,9 +157,9 @@
 
   /**
    * Process a collection of links: add buttons to those that are download links.
-   * @param {NodeList|Array<HTMLAnchorElement>} links - The links to process.
+   * @param {HTMLAnchorElement[]} links - The links to process.
    */
-  function processLinks(links) {
+  function processLinks(links: HTMLAnchorElement[]): void {
     for (const link of links) {
       if (isDownloadLink(link)) {
         addButtonToLink(link);
@@ -165,16 +170,17 @@
   /**
    * Recursively find all <a> elements inside a given node.
    * @param {Node} node - The root node.
-   * @returns {Array<HTMLAnchorElement>} Array of anchor elements.
+   * @returns {HTMLAnchorElement[]} Array of anchor elements.
    */
-  function findAnchorsInNode(node) {
-    let anchors = [];
+  function findAnchorsInNode(node: Node): HTMLAnchorElement[] {
+    const anchors: HTMLAnchorElement[] = [];
     if (node.nodeType === Node.ELEMENT_NODE) {
-      if (node.tagName === 'A') {
-        anchors.push(node);
+      const element = node as HTMLElement;
+      if (element.tagName === 'A') {
+        anchors.push(element as HTMLAnchorElement);
       }
       // Recursively collect from children
-      node.querySelectorAll('a').forEach((a) => anchors.push(a));
+      element.querySelectorAll('a').forEach((a) => anchors.push(a));
     }
     return anchors;
   }
@@ -182,14 +188,14 @@
   /**
    * Process all download links on the page (for initial load).
    */
-  function processAllLinks() {
+  function processAllLinks(): void {
     const allLinks = document.querySelectorAll('a');
-    processLinks(allLinks);
+    processLinks(Array.from(allLinks));
   }
 
   // ========== MutationObserver for dynamic content ==========
   const observer = new MutationObserver((mutations) => {
-    const newLinks = [];
+    const newLinks: HTMLAnchorElement[] = [];
     for (const mutation of mutations) {
       for (const addedNode of mutation.addedNodes) {
         const anchors = findAnchorsInNode(addedNode);

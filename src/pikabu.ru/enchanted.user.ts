@@ -13,7 +13,7 @@
 
 import {GM_addStyle, matchLocation, waitCompletePage} from '../utils';
 
-import saveButtonIcon from '!!raw-loader!./assets/save-icon.svg';
+import saveButtonIcon from './assets/save-icon.svg' with { type: "text" };
 import {E} from '../utils/dom';
 
 function fixSaveButton(): void {

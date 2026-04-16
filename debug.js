@@ -6,12 +6,13 @@
 // @author       Apkawa
 // @match        *://*/*
 // @require      file:///path/to/userscript/hd.kinopoisk.ru/main.js
+// @require      file://\\wsl$\Ubuntu-24.04\home\user\code\userscript\dist\chub.ai\chub.ai_downloader_helper.user.js
 // @grant        none
 // ==/UserScript==
 
 // https://stackoverflow.com/questions/41212558/develop-tampermonkey-scripts-in-a-real-ide-with-automatic-deployment-to-openuser
 
-(function() {
+(function () {
   'use strict';
 
   // Your code here...

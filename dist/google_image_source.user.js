@@ -9,14 +9,12 @@
 // @homepage     https://github.com/Apkawa/userscripts
 // @homepageURL  https://github.com/Apkawa/userscripts
 // @supportURL   https://github.com/Apkawa/userscripts/issues
-// @downloadURL  https://github.com/Apkawa/userscripts/raw/master/dist/./google_image_source.user.js
-// @updateURL    https://github.com/Apkawa/userscripts/raw/master/dist/./google_image_source.user.js
+// @downloadURL  https://github.com/Apkawa/userscripts/raw/master/dist/google_image_source.user.js
+// @updateURL    https://github.com/Apkawa/userscripts/raw/master/dist/google_image_source.user.js
 // @license      MIT
 // ==/UserScript==
-(() => {
-    "use strict";
-    function search(event) {
-        console.log(event);
-    }
-    GM_registerMenuCommand("Image search on pixiv", search);
-})();
+// src/google_image_source.user.ts
+function search(event) {
+  console.log(event);
+}
+GM_registerMenuCommand("Image search on pixiv", search);

@@ -2,11 +2,15 @@
 // @name         Civitai Aria2c Copy Button
 // @namespace    http://tampermonkey.net/
 // @version      1.0
-// @description  Добавляет кнопку копирования прямой ссылки в формате aria2c для скачивания моделей на civitai.com
+// @description  Adds aria2c direct link copy button to civitai.com
 // @author       UserScript
 // @match        https://civitai.com/*
 // @match        https://civitai.red/*
 // @grant        GM_xmlhttpRequest
+// @connect      ://civitai.red
+// @connect      ://civitai.com
+// @connect      ://*.civitai.red
+// @connect      ://*.civitai.com
 // ==/UserScript==
 
 (function () {
@@ -17,8 +21,10 @@
   const PROCESSED_ATTR = 'data-aria2c-processed';
   const BUTTON_TEXT = '📋 aria2c';
 
-  // Функция для показа уведомления
-  function showNotification(message, isError = false) {
+  /**
+   * Функция для показа уведомления
+   */
+  function showNotification(message: string, isError = false): void {
     const notification = document.createElement('div');
     notification.textContent = message;
     notification.style.position = 'fixed';
@@ -35,17 +41,24 @@
     notification.style.opacity = '0';
     notification.style.transition = 'opacity 0.3s';
     document.body.appendChild(notification);
+
+    // Force reflow to ensure transition works
+    notification.getBoundingClientRect();
+
     setTimeout(() => {
       notification.style.opacity = '1';
     }, 10);
+
     setTimeout(() => {
       notification.style.opacity = '0';
       setTimeout(() => notification.remove(), 300);
     }, 2000);
   }
 
-  // Извлечение имени файла из конечного URL (последний сегмент пути)
-  function getFilenameFromUrl(url) {
+  /**
+   * Извлечение имени файла из конечного URL (последний сегмент пути)
+   */
+  function getFilenameFromUrl(url: string): string {
     try {
       const urlObj = new URL(url);
       let pathname = urlObj.pathname;
@@ -61,17 +74,19 @@
       return 'unknown_file';
     }
   }
-  // Основная функция получения прямой ссылки и копирования в формате aria2c
-  async function handleCopy(linkElement, originalUrl) {
+
+  /**
+   * Основная функция получения прямой ссылки и копирования в формате aria2c
+   */
+  async function handleCopy(linkElement: HTMLAnchorElement, originalUrl: string): Promise<void> {
     const absoluteUrl = new URL(originalUrl, window.location.origin).href;
     try {
       showNotification('Получение прямой ссылки...', false);
 
-      const finalUrl = await new Promise((resolve, reject) => {
+      const finalUrl = await new Promise<string>((resolve, reject) => {
         GM_xmlhttpRequest({
           method: 'HEAD',
           url: absoluteUrl,
-          // credentials: 'include' в fetch соответствует передаче куки в GM_xmlhttpRequest по умолчанию
           onload: (response) => {
             // response.finalUrl содержит URL после всех редиректов
             resolve(response.finalUrl || response.url);
@@ -92,8 +107,10 @@
     }
   }
 
-  // Создание кнопки и вставка рядом с элементом <a>
-  function addButtonToLink(linkElement) {
+  /**
+   * Создание кнопки и вставка рядом с элементом <a>
+   */
+  function addButtonToLink(linkElement: HTMLAnchorElement): void {
     if (linkElement.hasAttribute(PROCESSED_ATTR)) return;
     linkElement.setAttribute(PROCESSED_ATTR, 'true');
 
@@ -108,15 +125,18 @@
     button.style.border = 'none';
     button.style.borderRadius = '4px';
     button.style.transition = 'background-color 0.2s';
+
     button.addEventListener('mouseenter', () => (button.style.backgroundColor = '#555'));
     button.addEventListener('mouseleave', () => (button.style.backgroundColor = '#2c2c2c'));
 
     // Обработчик клика
-    button.addEventListener('click', (e) => {
+    button.addEventListener('click', (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
       const href = linkElement.getAttribute('href');
-      if (href) handleCopy(linkElement, href);
+      if (href) {
+        void handleCopy(linkElement, href);
+      }
     });
 
     // Вставляем кнопку после ссылки (оборачиваем при необходимости)
@@ -135,14 +155,18 @@
     }
   }
 
-  // Обработка всех существующих и новых ссылок
-  function processAllLinks() {
-    const links = document.querySelectorAll(DOWNLOAD_SELECTOR);
+  /**
+   * Обработка всех существующих и новых ссылок
+   */
+  function processAllLinks(): void {
+    const links = document.querySelectorAll<HTMLAnchorElement>(DOWNLOAD_SELECTOR);
     links.forEach(addButtonToLink);
   }
 
-  // Настройка MutationObserver для отслеживания динамических изменений в DOM (SPA)
-  function observeDOMChanges() {
+  /**
+   * Настройка MutationObserver для отслеживания динамических изменений в DOM (SPA)
+   */
+  function observeDOMChanges(): void {
     const observer = new MutationObserver((mutations) => {
       let shouldProcess = false;
       for (const mutation of mutations) {
@@ -158,8 +182,10 @@
     observer.observe(document.body, {childList: true, subtree: true});
   }
 
-  // Инициализация скрипта
-  function init() {
+  /**
+   * Инициализация скрипта
+   */
+  function init(): void {
     processAllLinks();
     observeDOMChanges();
   }

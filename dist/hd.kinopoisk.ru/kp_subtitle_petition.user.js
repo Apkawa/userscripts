@@ -15,217 +15,221 @@
 // @homepage     https://github.com/Apkawa/userscripts
 // @homepageURL  https://github.com/Apkawa/userscripts
 // @supportURL   https://github.com/Apkawa/userscripts/issues
-// @downloadURL  https://github.com/Apkawa/userscripts/raw/master/dist/hd.kinopoisk.ru/kp_subtitle_petition.user.js
-// @updateURL    https://github.com/Apkawa/userscripts/raw/master/dist/hd.kinopoisk.ru/kp_subtitle_petition.user.js
+// @downloadURL  https://github.com/Apkawa/userscripts/raw/master/dist/kp_subtitle_petition.user.js
+// @updateURL    https://github.com/Apkawa/userscripts/raw/master/dist/kp_subtitle_petition.user.js
 // ==/UserScript==
-(() => {
-    "use strict";
-    function getElementByXpath(xpath, root = document) {
-        const e = document.evaluate(xpath, root, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-        return e && e;
+// src/utils/dom.ts
+function getElementByXpath(xpath, root = document) {
+  const e = document.evaluate(xpath, root, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+  return e && e;
+}
+function getElementsByXpath(xpath, root = document) {
+  const iterator = document.evaluate(xpath, root, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+  const result = [];
+  let el = iterator.iterateNext();
+  while (el) {
+    result.push(el);
+    el = iterator.iterateNext();
+  }
+  return result;
+}
+function markElementHandled(wrapFn, attrName = "_handled") {
+  return function(el) {
+    if (el.getAttribute(attrName)) {
+      return;
     }
-    function getElementsByXpath(xpath, root = document) {
-        const iterator = document.evaluate(xpath, root, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
-        const result = [];
-        let el = iterator.iterateNext();
-        while (el) {
-            result.push(el);
-            el = iterator.iterateNext();
+    el.setAttribute(attrName, "1");
+    wrapFn(el);
+  };
+}
+function waitElement(match, callback, root = document.body) {
+  const observer = new MutationObserver((mutations) => {
+    let matchFlag = false;
+    mutations.forEach((mutation) => {
+      if (!mutation.addedNodes)
+        return;
+      for (let i = 0;i < mutation.addedNodes.length; i++) {
+        const node = mutation.addedNodes[i];
+        matchFlag = match(node);
+      }
+    });
+    if (matchFlag) {
+      _stop();
+      callback();
+      _start();
+    }
+  });
+  let isStarted = false;
+  function _start() {
+    if (isStarted) {
+      return;
+    }
+    observer.observe(root || document.body, {
+      childList: true,
+      subtree: true,
+      attributes: false,
+      characterData: false
+    });
+    isStarted = true;
+  }
+  function _stop() {
+    observer.disconnect();
+    isStarted = false;
+  }
+  _start();
+  return () => {
+    _stop();
+  };
+}
+function E(tag, attributes = {}, ...children) {
+  const element = document.createElement(tag);
+  for (const [k, v] of Object.entries(attributes)) {
+    element.setAttribute(k, v);
+  }
+  const fragment = document.createDocumentFragment();
+  children.forEach((child) => {
+    if (typeof child === "string") {
+      child = document.createTextNode(child);
+    }
+    fragment.appendChild(child);
+  });
+  element.appendChild(fragment);
+  return element;
+}
+// src/utils/location.ts
+function mapLocation(map) {
+  const s = document.location.hostname + document.location.pathname;
+  for (const [k, v] of Object.entries(map)) {
+    if (RegExp(k).test(s)) {
+      v();
+    }
+  }
+}
+function parseSearch() {
+  return Object.fromEntries(new URLSearchParams(window.location.search).entries());
+}
+// src/hd.kinopoisk.ru/kp_subtitle_petition.user.ts
+var FORM_URL = "https://forms.yandex.ru/surveys/10022784.8ae29888f3224e212d4a904160b6baf0a05acd37/";
+function radioByText(text) {
+  const xpath = `//p[text() = '${text}']/../..`;
+  const matchingElement = getElementByXpath(xpath);
+  matchingElement?.click();
+}
+function selectByLabel(label, option) {
+  const xpath = `//p[text() = '${label}']/ancestor::tbody//select`;
+  const select = getElementByXpath(xpath);
+  const selected = getElementByXpath(`//option[@selected]`, select);
+  selected.removeAttribute("selected");
+  const opt = getElementByXpath(`//option[text() = '${option}']`, select);
+  select.value = opt?.value;
+  opt.setAttribute("selected", "1");
+  return select;
+}
+function fillInputByLabel(label, text) {
+  const xpath = `//p[text() = '${label}']/ancestor::tbody//input`;
+  const el = getElementByXpath(xpath);
+  el.value = text;
+  return el;
+}
+function getUserName() {
+  const el = getElementByXpath(`//span[@class='user__name']`);
+  return el?.innerText || "";
+}
+function normalizeKPLink(s) {
+  return s.replace(/www\./, "");
+}
+function renderHdKinopoiskRequestLink(sub) {
+  const filmContainer = getElementByXpath("ancestor::section", sub);
+  if (!filmContainer) {
+    return;
+  }
+  const subNames = [].slice.call(sub.getElementsByTagName("li")).map((el) => el.innerText);
+  const audio = getElementByXpath(`//div[text() = 'Аудиодорожки']/../ul`);
+  const audioNames = [].slice.call(audio?.getElementsByTagName("li")).map((el) => el.innerText);
+  function getInfo() {
+    const link = getElementByXpath(`//a[text() ='Подробнее на КиноПоиске']`, filmContainer).href.toString();
+    const type = getElementByXpath(`//button[text() = 'О сериале']`) ? "series" : "film";
+    return {
+      link: normalizeKPLink(link),
+      type
+    };
+  }
+  if (!audioNames.includes("Английский")) {
+    const info = { ...getInfo(), mode: "audio" };
+    const formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
+    const li = E("li", {}, E("a", { href: formUrl, target: "_blank" }, "Запросить оригинальную озвучку"));
+    audio?.appendChild(li);
+  }
+  if (!subNames.includes("Русские")) {
+    const info = getInfo();
+    const formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
+    const li = E("li", {}, E("a", { href: formUrl, target: "_blank" }, "Запросить русские сабы"));
+    sub.appendChild(li);
+  }
+}
+function renderKinopoiskRequestLink(sub) {
+  const filmContainer = getElementByXpath("ancestor::body", sub);
+  if (!filmContainer) {
+    return;
+  }
+  const country = getElementByXpath(`//div[text() = 'Страна']/following-sibling::div`, filmContainer)?.innerText;
+  const audio = getElementByXpath(`//div[text() = 'Аудиодорожки']/following-sibling::div`, filmContainer);
+  const audioNames = audio?.innerText.split(", ");
+  const subNames = sub.innerText.split(", ");
+  const info = {
+    link: normalizeKPLink(window.location.href),
+    type: /https:\/\/(?:www.|)kinopoisk.ru\/(series|film)\//.exec(window.location.href)?.[1] || ""
+  };
+  if (!audioNames?.includes("Английский") && country !== "Россия") {
+    const formUrl = FORM_URL + "?" + new URLSearchParams({ ...info, mode: "audio" }).toString();
+    const li = E("a", { href: formUrl, target: "_blank" }, "Запросить оригинальную озвучку");
+    audio?.appendChild(li);
+  }
+  if (!subNames.includes("Русские")) {
+    const formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
+    const li = E("a", { href: formUrl, target: "_blank" }, "Запросить русские сабы");
+    sub.appendChild(li);
+  }
+}
+(function() {
+  console.warn("DEPRECATED");
+  mapLocation({
+    "^forms.yandex.ru/": () => {
+      const params = parseSearch();
+      if (params.type === "film") {
+        radioByText("Фильм");
+      } else {
+        radioByText("Сериал");
+      }
+      if (params.mode === "audio") {
+        radioByText("Аудиодорожку/озвучку");
+        selectByLabel("Какую аудиодорожку добавить?", "Оригинальную");
+      } else {
+        radioByText("Субтитры");
+        const el = fillInputByLabel("Выберите субтитры:", params.lang || "Русский");
+        const hiddenEl = getElementByXpath(`ancestor::table//input[@type='hidden']`, el);
+        hiddenEl?.setAttribute("value", "30010730");
+      }
+      fillInputByLabel("Ссылка на фильм/сериал на КиноПоиске", params.link || "");
+      fillInputByLabel("Ваша почта", `${getUserName()}@yandex.ru`);
+    },
+    "^hd.kinopoisk.ru/": () => {
+      const xpath = `//div[text() = 'Субтитры']/../ul`;
+      waitElement((el) => Boolean(getElementByXpath(xpath, el)), () => {
+        const subtitles = getElementsByXpath(xpath);
+        for (const el of subtitles) {
+          markElementHandled(renderHdKinopoiskRequestLink)(el);
         }
-        return result;
-    }
-    function markElementHandled(wrapFn, attrName = "_handled") {
-        return function(el) {
-            if (el.getAttribute(attrName)) return;
-            el.setAttribute(attrName, "1");
-            wrapFn(el);
-        };
-    }
-    function waitElement(match, callback, root = document.body) {
-        const observer = new MutationObserver(mutations => {
-            let matchFlag = false;
-            mutations.forEach(mutation => {
-                if (!mutation.addedNodes) return;
-                for (let i = 0; i < mutation.addedNodes.length; i++) {
-                    const node = mutation.addedNodes[i];
-                    matchFlag = match(node);
-                }
-            });
-            if (matchFlag) {
-                _stop();
-                callback();
-                _start();
-            }
-        });
-        let isStarted = false;
-        function _start() {
-            if (isStarted) return;
-            observer.observe(root || document.body, {
-                childList: true,
-                subtree: true,
-                attributes: false,
-                characterData: false
-            });
-            isStarted = true;
+      });
+    },
+    "(www.|)kinopoisk.ru/(series|film)": () => {
+      const xpath = `//div[text() = 'Субтитры']/following-sibling::div`;
+      waitElement((el) => Boolean(getElementByXpath(xpath, el)), () => {
+        const subtitles = getElementsByXpath(xpath);
+        for (const el of subtitles) {
+          markElementHandled(renderKinopoiskRequestLink)(el);
         }
-        function _stop() {
-            observer.disconnect();
-            isStarted = false;
-        }
-        _start();
-        return () => {
-            _stop();
-        };
+      });
     }
-    function E(tag, attributes = {}, ...children) {
-        const element = document.createElement(tag);
-        for (const [k, v] of Object.entries(attributes)) element.setAttribute(k, v);
-        const fragment = document.createDocumentFragment();
-        children.forEach(child => {
-            if (typeof child === "string") child = document.createTextNode(child);
-            fragment.appendChild(child);
-        });
-        element.appendChild(fragment);
-        return element;
-    }
-    function mapLocation(map) {
-        const s = document.location.hostname + document.location.pathname;
-        for (const [k, v] of Object.entries(map)) if (RegExp(k).test(s)) v();
-    }
-    function parseSearch() {
-        return Object.fromEntries(new URLSearchParams(window.location.search).entries());
-    }
-    Object.keys;
-    Object.entries;
-    Object.values;
-    const FORM_URL = "https://forms.yandex.ru/surveys/10022784.8ae29888f3224e212d4a904160b6baf0a05acd37/";
-    function radioByText(text) {
-        const xpath = `//p[text() = '${text}']/../..`;
-        const matchingElement = getElementByXpath(xpath);
-        matchingElement?.click();
-    }
-    function selectByLabel(label, option) {
-        const xpath = `//p[text() = '${label}']/ancestor::tbody//select`;
-        const select = getElementByXpath(xpath);
-        const selected = getElementByXpath(`//option[@selected]`, select);
-        selected.removeAttribute("selected");
-        const opt = getElementByXpath(`//option[text() = '${option}']`, select);
-        select.value = opt?.value;
-        opt.setAttribute("selected", "1");
-        return select;
-    }
-    function fillInputByLabel(label, text) {
-        const xpath = `//p[text() = '${label}']/ancestor::tbody//input`;
-        const el = getElementByXpath(xpath);
-        el.value = text;
-        return el;
-    }
-    function getUserName() {
-        const el = getElementByXpath(`//span[@class='user__name']`);
-        return el?.innerText || "";
-    }
-    function normalizeKPLink(s) {
-        return s.replace(/www\./, "");
-    }
-    function renderHdKinopoiskRequestLink(sub) {
-        const filmContainer = getElementByXpath("ancestor::section", sub);
-        if (!filmContainer) return;
-        const subNames = [].slice.call(sub.getElementsByTagName("li")).map(el => el.innerText);
-        const audio = getElementByXpath(`//div[text() = 'Аудиодорожки']/../ul`);
-        const audioNames = [].slice.call(audio?.getElementsByTagName("li")).map(el => el.innerText);
-        function getInfo() {
-            const link = getElementByXpath(`//a[text() ='Подробнее на КиноПоиске']`, filmContainer).href.toString();
-            const type = getElementByXpath(`//button[text() = 'О сериале']`) ? "series" : "film";
-            return {
-                link: normalizeKPLink(link),
-                type
-            };
-        }
-        if (!audioNames.includes("Английский")) {
-            const info = {
-                ...getInfo(),
-                mode: "audio"
-            };
-            const formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
-            const li = E("li", {}, E("a", {
-                href: formUrl,
-                target: "_blank"
-            }, "Запросить оригинальную озвучку"));
-            audio?.appendChild(li);
-        }
-        if (!subNames.includes("Русские")) {
-            const info = getInfo();
-            const formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
-            const li = E("li", {}, E("a", {
-                href: formUrl,
-                target: "_blank"
-            }, "Запросить русские сабы"));
-            sub.appendChild(li);
-        }
-    }
-    function renderKinopoiskRequestLink(sub) {
-        const filmContainer = getElementByXpath("ancestor::body", sub);
-        if (!filmContainer) return;
-        const country = getElementByXpath(`//div[text() = 'Страна']/following-sibling::div`, filmContainer)?.innerText;
-        const audio = getElementByXpath(`//div[text() = 'Аудиодорожки']/following-sibling::div`, filmContainer);
-        const audioNames = audio?.innerText.split(", ");
-        const subNames = sub.innerText.split(", ");
-        const info = {
-            link: normalizeKPLink(window.location.href),
-            type: /https:\/\/(?:www.|)kinopoisk.ru\/(series|film)\//.exec(window.location.href)?.[1] || ""
-        };
-        if (!audioNames?.includes("Английский") && country !== "Россия") {
-            const formUrl = FORM_URL + "?" + new URLSearchParams({
-                ...info,
-                mode: "audio"
-            }).toString();
-            const li = E("a", {
-                href: formUrl,
-                target: "_blank"
-            }, "Запросить оригинальную озвучку");
-            audio?.appendChild(li);
-        }
-        if (!subNames.includes("Русские")) {
-            const formUrl = FORM_URL + "?" + new URLSearchParams(info).toString();
-            const li = E("a", {
-                href: formUrl,
-                target: "_blank"
-            }, "Запросить русские сабы");
-            sub.appendChild(li);
-        }
-    }
-    (function() {
-        console.warn("DEPRECATED");
-        mapLocation({
-            "^forms.yandex.ru/": () => {
-                const params = parseSearch();
-                if (params.type === "film") radioByText("Фильм"); else radioByText("Сериал");
-                if (params.mode === "audio") {
-                    radioByText("Аудиодорожку/озвучку");
-                    selectByLabel("Какую аудиодорожку добавить?", "Оригинальную");
-                } else {
-                    radioByText("Субтитры");
-                    const el = fillInputByLabel("Выберите субтитры:", params.lang || "Русский");
-                    const hiddenEl = getElementByXpath(`ancestor::table//input[@type='hidden']`, el);
-                    hiddenEl?.setAttribute("value", "30010730");
-                }
-                fillInputByLabel("Ссылка на фильм/сериал на КиноПоиске", params.link || "");
-                fillInputByLabel("Ваша почта", `${getUserName()}@yandex.ru`);
-            },
-            "^hd.kinopoisk.ru/": () => {
-                const xpath = `//div[text() = 'Субтитры']/../ul`;
-                waitElement(el => Boolean(getElementByXpath(xpath, el)), () => {
-                    const subtitles = getElementsByXpath(xpath);
-                    for (const el of subtitles) markElementHandled(renderHdKinopoiskRequestLink)(el);
-                });
-            },
-            "(www.|)kinopoisk.ru/(series|film)": () => {
-                const xpath = `//div[text() = 'Субтитры']/following-sibling::div`;
-                waitElement(el => Boolean(getElementByXpath(xpath, el)), () => {
-                    const subtitles = getElementsByXpath(xpath);
-                    for (const el of subtitles) markElementHandled(renderKinopoiskRequestLink)(el);
-                });
-            }
-        });
-    })();
+  });
 })();
