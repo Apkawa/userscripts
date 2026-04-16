@@ -114,6 +114,9 @@
     ],
     "rules": {
       "prettier/prettier": "off",
+      "no-floating-promises": {
+        "ignoreVoid": true
+      },
       "max-len": [
         "error",
         {

@@ -5,8 +5,8 @@
 // @description  Добавляет кнопку копирования прямой ссылки в формате aria2c для скачивания моделей на civitai.com
 // @author       UserScript
 // @match        https://civitai.com/*
-// @grant        none
-//
+// @match        https://civitai.red/*
+// @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
 (function () {
@@ -61,19 +61,27 @@
       return 'unknown_file';
     }
   }
-
   // Основная функция получения прямой ссылки и копирования в формате aria2c
   async function handleCopy(linkElement, originalUrl) {
     const absoluteUrl = new URL(originalUrl, window.location.origin).href;
     try {
       showNotification('Получение прямой ссылки...', false);
-      // Выполняем GET-запрос, чтобы перехватить редирект, но не читаем тело
-      const response = await fetch(absoluteUrl, {
-        method: 'HEAD',
-        credentials: 'include', // передаём куки авторизации
-        redirect: 'follow',
+
+      const finalUrl = await new Promise((resolve, reject) => {
+        GM_xmlhttpRequest({
+          method: 'HEAD',
+          url: absoluteUrl,
+          // credentials: 'include' в fetch соответствует передаче куки в GM_xmlhttpRequest по умолчанию
+          onload: (response) => {
+            // response.finalUrl содержит URL после всех редиректов
+            resolve(response.finalUrl || response.url);
+          },
+          onerror: (error) => {
+            reject(error);
+          },
+        });
       });
-      const finalUrl = response.url;
+
       const filename = getFilenameFromUrl(finalUrl);
       const aria2cText = `${finalUrl}\n    out=${filename}`;
       await navigator.clipboard.writeText(aria2cText);
