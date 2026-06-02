@@ -49,9 +49,22 @@
       setTimeout(() => notification.remove(), 300);
     }, 2000);
   }
+  function getFilenameFromContentDisposition(decodedValue) {
+    const regex = /filename\s*=\s*["']?([^"';\s]+)/i;
+    const match = decodedValue.match(regex);
+    return match ? match[1] : null;
+  }
   function getFilenameFromUrl(url) {
     try {
       const urlObj = new URL(url);
+      let cdParam = null;
+      for (const [, value] of urlObj.searchParams) {
+        const decoded = decodeURIComponent(value);
+        const filename2 = getFilenameFromContentDisposition(decoded);
+        if (filename2) {
+          return filename2;
+        }
+      }
       let pathname = urlObj.pathname;
       if (pathname.endsWith("/"))
         pathname = pathname.slice(0, -1);

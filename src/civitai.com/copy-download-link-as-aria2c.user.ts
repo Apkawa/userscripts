@@ -54,11 +54,36 @@
   }
 
   /**
-   * Извлечение имени файла из конечного URL (последний сегмент пути)
+   * Извлечение имени файла из content-disposition query-параметра
+   * Например: attachment; filename="animayume_v05.safetensors"
+   */
+  function getFilenameFromContentDisposition(decodedValue: string): string | null {
+    // Ищем паттерн filename="..." или filename='...'
+    const regex = /filename\s*=\s*["']?([^"';\s]+)/i;
+    const match = decodedValue.match(regex);
+    return match ? match[1] : null;
+  }
+
+  /**
+   * Извлечение имени файла из конечного URL:
+   * 1. Сначала пытаемся извлечь из response-content-disposition query-параметра
+   * 2. Фоллбэк — последний сегмент пути
    */
   function getFilenameFromUrl(url: string): string {
     try {
       const urlObj = new URL(url);
+
+      // 1. Пробуем найти query-параметр, значение которого содержит Content-Disposition с именем файла
+      let cdParam: string | null = null;
+      for (const [, value] of urlObj.searchParams) {
+        const decoded = decodeURIComponent(value);
+        const filename = getFilenameFromContentDisposition(decoded);
+        if (filename) {
+          return filename;
+        }
+      }
+
+      // 2. Фоллбэк — последний сегмент пути
       let pathname = urlObj.pathname;
       // Убираем завершающий слэш, если есть
       if (pathname.endsWith("/")) pathname = pathname.slice(0, -1);
