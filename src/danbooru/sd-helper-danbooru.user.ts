@@ -76,16 +76,17 @@ function renderClipboardButton(
   root_el: Element,
   dataText: string,
   button_text: string,
-  attr_name = "data-sd-tags",
+  attr_name = "sdTags",
 ) {
   const escapedText = escapePrompt(dataText);
   const button_el = createElementFromHTML(
-    `<button ${attr_name}='${escapedText}'>
+    `<button>
     ${button_text}</button>`,
+    {[attr_name]: escapedText}
   );
   button_el.addEventListener("click", (event) => {
     const _this = event.currentTarget as HTMLElement;
-    const t = _this.getAttribute(attr_name);
+    const t = _this.dataset[attr_name];
     t && void navigator.clipboard.writeText(t);
     return false;
   });
@@ -157,6 +158,7 @@ function renderCopyPostPrompt(tagList: SectionTagList, el: Element | null) {
 }
 
 (() => {
+  console.log("DANBOORU SD helper")
   mapLocation({
     "^danbooru.donmai.us/": () => {
       const imgs = document.querySelectorAll("[data-tags]");

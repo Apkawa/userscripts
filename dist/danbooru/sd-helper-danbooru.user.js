@@ -21,11 +21,15 @@
 // @updateURL    https://github.com/Apkawa/userscripts/raw/master/dist/sd-helper-danbooru.user.js
 // ==/UserScript==
 // src/utils/dom.ts
-function createElementFromHTML(htmlString) {
+function createElementFromHTML(htmlString, dataset = {}) {
   const div = document.createElement("div");
   div.innerHTML = htmlString.trim();
   if (div.firstChild) {
-    return div.firstChild;
+    const child = div.firstChild;
+    for (const [k, v] of Object.entries(dataset)) {
+      child.dataset[k] = v;
+    }
+    return child;
   } else {
     throw new Error("No nodes found in HTML string");
   }
@@ -118,13 +122,13 @@ function filterSections(section) {
   }
   return section;
 }
-function renderClipboardButton(root_el, dataText, button_text, attr_name = "data-sd-tags") {
+function renderClipboardButton(root_el, dataText, button_text, attr_name = "sdTags") {
   const escapedText = escapePrompt(dataText);
-  const button_el = createElementFromHTML(`<button ${attr_name}='${escapedText}'>
-    ${button_text}</button>`);
+  const button_el = createElementFromHTML(`<button>
+    ${button_text}</button>`, { [attr_name]: escapedText });
   button_el.addEventListener("click", (event) => {
     const _this = event.currentTarget;
-    const t = _this.getAttribute(attr_name);
+    const t = _this.dataset[attr_name];
     t && navigator.clipboard.writeText(t);
     return false;
   });
@@ -185,6 +189,7 @@ function renderCopyPostPrompt(tagList, el) {
   el && renderClipboardButton(el, prompt, "copy prompt");
 }
 (() => {
+  console.log("DANBOORU SD helper");
   mapLocation({
     "^danbooru.donmai.us/": () => {
       const imgs = document.querySelectorAll("[data-tags]");

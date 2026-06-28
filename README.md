@@ -5,8 +5,10 @@
 ### Актуальные скрипты
 
 
-* [pikabu.ru/video_url.user.ts](src/pikabu.ru/video_url.user.ts) - добавление под видео ссылок на скачивание [mp4] и [gif] [[greasyfork]](https://greasyfork.org/scripts/433361) [[raw]](https://github.com/Apkawa/userscripts/raw/master/dist/pikabu.ru/video_url.user.js)
-* [danbooru/sd-helper-danbooru.user.ts](src/danbooru/sd-helper-danbooru.user.ts) - копирование тегов и промпта из данбур для Stable Diffusion
+* [pikabu.ru/video_url.user.ts](dist/pikabu.ru/video_url.user.js) - добавление под видео ссылок на скачивание [mp4] и [gif] [[greasyfork]](https://greasyfork.org/scripts/433361) [[raw]](https://github.com/Apkawa/userscripts/raw/master/dist/pikabu.ru/video_url.user.js)
+* [danbooru/sd-helper-danbooru.user.ts](dist/danbooru/sd-helper-danbooru.user.js) - копирование тегов и промпта из данбур для Stable Diffusion
+* [huggingface.co/copy-download-link-as-aria2c.user.js](dist/huggingface.co/copy-download-link-as-aria2c.user.js) - копирование ссылки для aria2c для обниморды
+
 
 ### Заброшенные
 
@@ -26,4 +28,3 @@
 ## Разработка
 
 По вопросам самостоятельной сборки и доработок см в [CONTRIBUTING](./CONTRIBUTING.md)
-

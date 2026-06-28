@@ -152,13 +152,18 @@ export function E(
   return element;
 }
 
-export function createElementFromHTML(htmlString: string): Node {
+export function createElementFromHTML(
+  htmlString: string,
+  dataset: { [key: string]: string } = {}): Node {
   const div = document.createElement("div");
   div.innerHTML = htmlString.trim();
-
   // Change this to div.childNodes to support multiple top-level nodes.
   if (div.firstChild) {
-    return div.firstChild as Node;
+    const child = div.firstChild as HTMLElement;
+    for (const [k, v] of Object.entries(dataset)) {
+      child.dataset[k] = v
+    }
+    return child
   } else {
     throw new Error("No nodes found in HTML string");
   }
