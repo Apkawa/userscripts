@@ -82,7 +82,7 @@ function renderClipboardButton(
   const button_el = createElementFromHTML(
     `<button>
     ${button_text}</button>`,
-    {[attr_name]: escapedText}
+    { [attr_name]: escapedText },
   );
   button_el.addEventListener("click", (event) => {
     const _this = event.currentTarget as HTMLElement;
@@ -158,7 +158,7 @@ function renderCopyPostPrompt(tagList: SectionTagList, el: Element | null) {
 }
 
 (() => {
-  console.log("DANBOORU SD helper")
+  console.log("DANBOORU SD helper");
   mapLocation({
     "^danbooru.donmai.us/": () => {
       const imgs = document.querySelectorAll("[data-tags]");

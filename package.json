@@ -56,7 +56,7 @@
     "type": "tsc --noEmit -p .",
     "lint": "eslint src/ --ext js,ts,tsx --max-warnings=0 --fix --format unix --color",
     "check": "bun run test && bun lint && bun format:check",
-    "pre-commit": "npm run format && npm run build && git add -A dist/"
+    "pre-commit": "npm run format && npm run build && git add -A dist/ && git add -u"
   },
   "engines": {
     "bun": ">=1.3.12"
