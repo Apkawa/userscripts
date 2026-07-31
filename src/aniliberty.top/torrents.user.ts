@@ -6,9 +6,14 @@
 // @author       UserScript
 // @match        https://www.aniliberty.top/anime/catalog/
 // ==/UserScript==
+import { showNotification } from "@app/utils/ui/notification";
 
 type CatalogItem = {
   id: number;
+  name: {
+    english: string;
+    main: string;
+  };
   alias: string;
 };
 
@@ -75,7 +80,7 @@ type PiniaState = {
   }
 
   // ---------- Alias -> ID map ----------
-  const aliasMap = new Map<string, number>();
+  const aliasMap = new Map<string, CatalogItem>();
 
   function updateAliasMap(): void {
     const state = getNuxtState();
@@ -83,18 +88,22 @@ type PiniaState = {
     const items = getCatalogItems(state);
     for (const item of items) {
       if (!aliasMap.has(item.alias)) {
-        aliasMap.set(item.alias, item.id);
+        aliasMap.set(item.alias, item);
       }
     }
   }
 
-  function getReleaseId(alias: string): number | null {
+  function getReleaseByAlias(alias: string): CatalogItem | null {
     // Try map first, then update from state and try again
     if (aliasMap.has(alias)) {
       return aliasMap.get(alias)!;
     }
     updateAliasMap();
     return aliasMap.get(alias) ?? null;
+  }
+
+  function getReleaseId(alias: string): number | null {
+    return getReleaseByAlias(alias)?.id ?? null;
   }
 
   // ---------- API calls ----------
@@ -121,55 +130,6 @@ type PiniaState = {
     a.remove();
     URL.revokeObjectURL(a.href);
   }
-
-  // ---------- Notifications ----------
-  function showNotification(message: string, type: "success" | "error" = "success"): void {
-    const containerId = "us-notification-container";
-    let container = document.getElementById(containerId);
-    if (!container) {
-      container = document.createElement("div");
-      container.id = containerId;
-      Object.assign(container.style, {
-        position: "fixed",
-        bottom: "20px",
-        right: "20px",
-        zIndex: "9999",
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        maxWidth: "300px",
-        pointerEvents: "none",
-      });
-      document.body.appendChild(container);
-    }
-
-    const notification = document.createElement("div");
-    Object.assign(notification.style, {
-      padding: "12px 16px",
-      borderRadius: "8px",
-      color: "#fff",
-      fontSize: "14px",
-      fontWeight: "500",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-      backgroundColor: type === "success" ? "#2e7d32" : "#c62828",
-      pointerEvents: "auto",
-      transition: "opacity 0.3s ease",
-      opacity: "1",
-    });
-    notification.textContent = message;
-    container.appendChild(notification);
-
-    // Auto remove after 4 seconds
-    setTimeout(() => {
-      notification.style.opacity = "0";
-      setTimeout(() => {
-        if (notification.parentNode) {
-          notification.remove();
-        }
-      }, 300);
-    }, 4000);
-  }
-
   // ---------- Button creation ----------
   function createIconButton(iconSvg: string, label: string): HTMLButtonElement {
     const button = document.createElement("button");
@@ -265,29 +225,49 @@ type PiniaState = {
 
   function handleError(err: Error | string) {
     console.error(err);
-    showNotification(err instanceof Error ? err.message : err.toString(), "error");
+    showNotification(err instanceof Error ? err.message : err.toString(), { type: "error" });
+  }
+
+  /**
+   * Очищает строку от символов, запрещённых в именах файлов Windows,
+   * заменяя их на пробелы, и нормализует пробелы.
+   * @param input - исходная строка
+   * @returns очищенная строка
+   */
+  function sanitizeFileName(input: string): string {
+    // Заменяем недопустимые символы (\, /, :, *, ?, ", <, >, |) на пробелы
+    let result = input.replace(/[\\/:*?"<>|]/g, " ");
+    // Заменяем управляющие символы (коды 0–31) на пробелы
+    result = result.replace(/[\x00-\x1F]/g, " ");
+    // Схлопываем множественные пробелы в один и убираем пробелы по краям
+    result = result.replace(/\s+/g, " ").trim();
+    return result;
   }
 
   // ---------- Click handlers ----------
   async function handleMagnetClick(alias: string): Promise<void> {
     try {
-      const id = getReleaseId(alias);
-      if (!id) {
-        showNotification("Release ID not found for alias: " + alias, "error");
+      const release = getReleaseByAlias(alias);
+      if (!release) {
+        showNotification("Release ID not found for alias: " + alias, { type: "error" });
         return;
       }
-      const torrents = await fetchTorrents(id);
+
+      const torrents = await fetchTorrents(release.id);
       if (torrents.length === 0) {
-        showNotification("No HEVC torrent found", "error");
+        showNotification("No HEVC torrent found", { type: "error" });
         return;
       }
       // Open first magnet
       const magnet = torrents[0].magnet;
       window.open(magnet, "_blank");
-      showNotification("Magnet opened", "success");
+      showNotification("Magnet opened");
+      await navigator.clipboard.writeText(sanitizeFileName(release.name.main));
     } catch (err) {
       console.error(err);
-      showNotification(err instanceof Error ? err.message : "Error fetching magnet", "error");
+      showNotification(err instanceof Error ? err.message : "Error fetching magnet", {
+        type: "error",
+      });
     }
   }
 
@@ -295,31 +275,35 @@ type PiniaState = {
     try {
       const state = getNuxtState();
       if (!state) {
-        showNotification("Cannot access app state", "error");
+        showNotification("Cannot access app state", { type: "error" });
         return;
       }
       const passkey = getPasskey(state);
       if (!passkey) {
-        showNotification("Passkey not found", "error");
+        showNotification("Passkey not found", { type: "error" });
         return;
       }
 
-      const id = getReleaseId(alias);
-      if (!id) {
-        showNotification("Release ID not found", "error");
+      const release = getReleaseByAlias(alias);
+      if (!release) {
+        showNotification("Release ID not found", { type: "error" });
         return;
       }
+      const { id, name } = release;
       const torrents = await fetchTorrents(id);
       if (torrents.length === 0) {
-        showNotification("No HEVC torrent found", "error");
+        showNotification("No HEVC torrent found", { type: "error" });
         return;
       }
 
       await downloadTorrentFile(torrents[0], passkey);
-      showNotification("Torrent downloaded", "success");
+      showNotification("Torrent downloaded");
+      await navigator.clipboard.writeText(sanitizeFileName(name.main));
     } catch (err) {
       console.error(err);
-      showNotification(err instanceof Error ? err.message : "Error downloading torrent", "error");
+      showNotification(err instanceof Error ? err.message : "Error downloading torrent", {
+        type: "error",
+      });
     }
   }
 

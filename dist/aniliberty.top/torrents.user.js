@@ -12,6 +12,38 @@
 // @updateURL    https://github.com/Apkawa/userscripts/raw/master/dist/torrents.user.js
 // @license      MIT
 // ==/UserScript==
+// src/utils/ui/notification.ts
+var NotificationDefaultOpts = {
+  type: "success"
+};
+function showNotification(message, opts = NotificationDefaultOpts) {
+  const isError = opts?.type == "error";
+  const notification = document.createElement("div");
+  notification.textContent = message;
+  notification.style.position = "fixed";
+  notification.style.bottom = "20px";
+  notification.style.right = "20px";
+  notification.style.backgroundColor = isError ? "#f44336" : "#4caf50";
+  notification.style.color = "white";
+  notification.style.padding = "10px 20px";
+  notification.style.borderRadius = "5px";
+  notification.style.zIndex = "10000";
+  notification.style.fontFamily = "sans-serif";
+  notification.style.fontSize = "14px";
+  notification.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
+  notification.style.opacity = "0";
+  notification.style.transition = "opacity 0.3s";
+  document.body.appendChild(notification);
+  notification.getBoundingClientRect();
+  setTimeout(() => {
+    notification.style.opacity = "1";
+  }, 10);
+  setTimeout(() => {
+    notification.style.opacity = "0";
+    setTimeout(() => notification.remove(), 300);
+  }, 2000);
+}
+
 // src/aniliberty.top/torrents.user.ts
 (function() {
   function getNuxtState() {
@@ -47,16 +79,19 @@
     const items = getCatalogItems(state);
     for (const item of items) {
       if (!aliasMap.has(item.alias)) {
-        aliasMap.set(item.alias, item.id);
+        aliasMap.set(item.alias, item);
       }
     }
   }
-  function getReleaseId(alias) {
+  function getReleaseByAlias(alias) {
     if (aliasMap.has(alias)) {
       return aliasMap.get(alias);
     }
     updateAliasMap();
     return aliasMap.get(alias) ?? null;
+  }
+  function getReleaseId(alias) {
+    return getReleaseByAlias(alias)?.id ?? null;
   }
   async function fetchTorrents(releaseId) {
     const url = `https://www.aniliberty.top/api/v1/anime/torrents/release/${releaseId}`;
@@ -80,49 +115,6 @@
     a.click();
     a.remove();
     URL.revokeObjectURL(a.href);
-  }
-  function showNotification(message, type = "success") {
-    const containerId = "us-notification-container";
-    let container = document.getElementById(containerId);
-    if (!container) {
-      container = document.createElement("div");
-      container.id = containerId;
-      Object.assign(container.style, {
-        position: "fixed",
-        bottom: "20px",
-        right: "20px",
-        zIndex: "9999",
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        maxWidth: "300px",
-        pointerEvents: "none"
-      });
-      document.body.appendChild(container);
-    }
-    const notification = document.createElement("div");
-    Object.assign(notification.style, {
-      padding: "12px 16px",
-      borderRadius: "8px",
-      color: "#fff",
-      fontSize: "14px",
-      fontWeight: "500",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-      backgroundColor: type === "success" ? "#2e7d32" : "#c62828",
-      pointerEvents: "auto",
-      transition: "opacity 0.3s ease",
-      opacity: "1"
-    });
-    notification.textContent = message;
-    container.appendChild(notification);
-    setTimeout(() => {
-      notification.style.opacity = "0";
-      setTimeout(() => {
-        if (notification.parentNode) {
-          notification.remove();
-        }
-      }, 300);
-    }, 4000);
   }
   function createIconButton(iconSvg, label) {
     const button = document.createElement("button");
@@ -202,55 +194,68 @@
   }
   function handleError(err) {
     console.error(err);
-    showNotification(err instanceof Error ? err.message : err.toString(), "error");
+    showNotification(err instanceof Error ? err.message : err.toString(), { type: "error" });
+  }
+  function sanitizeFileName(input) {
+    let result = input.replace(/[\\/:*?"<>|]/g, " ");
+    result = result.replace(/[\x00-\x1F]/g, " ");
+    result = result.replace(/\s+/g, " ").trim();
+    return result;
   }
   async function handleMagnetClick(alias) {
     try {
-      const id = getReleaseId(alias);
-      if (!id) {
-        showNotification("Release ID not found for alias: " + alias, "error");
+      const release = getReleaseByAlias(alias);
+      if (!release) {
+        showNotification("Release ID not found for alias: " + alias, { type: "error" });
         return;
       }
-      const torrents = await fetchTorrents(id);
+      const torrents = await fetchTorrents(release.id);
       if (torrents.length === 0) {
-        showNotification("No HEVC torrent found", "error");
+        showNotification("No HEVC torrent found", { type: "error" });
         return;
       }
       const magnet = torrents[0].magnet;
       window.open(magnet, "_blank");
-      showNotification("Magnet opened", "success");
+      showNotification("Magnet opened");
+      await navigator.clipboard.writeText(sanitizeFileName(release.name.main));
     } catch (err) {
       console.error(err);
-      showNotification(err instanceof Error ? err.message : "Error fetching magnet", "error");
+      showNotification(err instanceof Error ? err.message : "Error fetching magnet", {
+        type: "error"
+      });
     }
   }
   async function handleTorrentClick(alias) {
     try {
       const state = getNuxtState();
       if (!state) {
-        showNotification("Cannot access app state", "error");
+        showNotification("Cannot access app state", { type: "error" });
         return;
       }
       const passkey = getPasskey(state);
       if (!passkey) {
-        showNotification("Passkey not found", "error");
+        showNotification("Passkey not found", { type: "error" });
         return;
       }
-      const id = getReleaseId(alias);
-      if (!id) {
-        showNotification("Release ID not found", "error");
+      const release = getReleaseByAlias(alias);
+      if (!release) {
+        showNotification("Release ID not found", { type: "error" });
         return;
       }
+      const { id, name } = release;
       const torrents = await fetchTorrents(id);
       if (torrents.length === 0) {
-        showNotification("No HEVC torrent found", "error");
+        showNotification("No HEVC torrent found", { type: "error" });
         return;
       }
       await downloadTorrentFile(torrents[0], passkey);
-      showNotification("Torrent downloaded", "success");
+      showNotification("Torrent downloaded");
+      await navigator.clipboard.writeText(sanitizeFileName(name.main));
     } catch (err) {
       console.error(err);
-      showNotification(err instanceof Error ? err.message : "Error downloading torrent", "error");
+      showNotification(err instanceof Error ? err.message : "Error downloading torrent", {
+        type: "error"
+      });
     }
   }
   function processAnchor(anchor) {
