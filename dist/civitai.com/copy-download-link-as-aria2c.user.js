@@ -18,36 +18,52 @@
 // @updateURL    https://github.com/Apkawa/userscripts/raw/master/dist/copy-download-link-as-aria2c.user.js
 // @license      MIT
 // ==/UserScript==
+// src/utils/ui/notification.ts
+var NotificationDefaultOpts = {
+  type: "success"
+};
+function showNotification(message, opts = NotificationDefaultOpts) {
+  const isError = opts?.type == "error";
+  const notification = document.createElement("div");
+  notification.textContent = message;
+  notification.style.position = "fixed";
+  notification.style.bottom = "20px";
+  notification.style.right = "20px";
+  notification.style.backgroundColor = isError ? "#f44336" : "#4caf50";
+  notification.style.color = "white";
+  notification.style.padding = "10px 20px";
+  notification.style.borderRadius = "5px";
+  notification.style.zIndex = "10000";
+  notification.style.fontFamily = "sans-serif";
+  notification.style.fontSize = "14px";
+  notification.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
+  notification.style.opacity = "0";
+  notification.style.transition = "opacity 0.3s";
+  document.body.appendChild(notification);
+  notification.getBoundingClientRect();
+  setTimeout(() => {
+    notification.style.opacity = "1";
+  }, 10);
+  setTimeout(() => {
+    notification.style.opacity = "0";
+    setTimeout(() => notification.remove(), 300);
+  }, 2000);
+}
+
+// src/utils/error.ts
+function getErrorMessage(error) {
+  if (error instanceof Error)
+    return error.message;
+  return String(error);
+}
+
 // src/civitai.com/copy-download-link-as-aria2c.user.ts
 (() => {
   const DOWNLOAD_SELECTOR = 'a[href^="/api/download/"]';
   const PROCESSED_ATTR = "data-aria2c-processed";
   const BUTTON_TEXT = "\uD83D\uDCCB aria2c";
-  function showNotification(message, isError = false) {
-    const notification = document.createElement("div");
-    notification.textContent = message;
-    notification.style.position = "fixed";
-    notification.style.bottom = "20px";
-    notification.style.right = "20px";
-    notification.style.backgroundColor = isError ? "#f44336" : "#4caf50";
-    notification.style.color = "white";
-    notification.style.padding = "10px 20px";
-    notification.style.borderRadius = "5px";
-    notification.style.zIndex = "10000";
-    notification.style.fontFamily = "sans-serif";
-    notification.style.fontSize = "14px";
-    notification.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
-    notification.style.opacity = "0";
-    notification.style.transition = "opacity 0.3s";
-    document.body.appendChild(notification);
-    notification.getBoundingClientRect();
-    setTimeout(() => {
-      notification.style.opacity = "1";
-    }, 10);
-    setTimeout(() => {
-      notification.style.opacity = "0";
-      setTimeout(() => notification.remove(), 300);
-    }, 2000);
+  function getBuildId() {
+    return __NEXT_DATA__?.buildId ?? null;
   }
   function getFilenameFromContentDisposition(decodedValue) {
     const regex = /filename\s*=\s*["']?([^"';\s]+)/i;
@@ -77,10 +93,45 @@
       return "unknown_file";
     }
   }
+  function parseCurrentPageUrl() {
+    try {
+      const url = new URL(window.location.href);
+      const segments = url.pathname.split("/");
+      const modelsIndex = segments.indexOf("models");
+      if (modelsIndex === -1 || modelsIndex + 2 >= segments.length)
+        return null;
+      return {
+        modelId: segments[modelsIndex + 1],
+        modelSlug: segments[modelsIndex + 2]
+      };
+    } catch (e) {
+      console.error("Error parsing current page URL:", e);
+      return null;
+    }
+  }
+  function parseDownloadUrl(originalUrl) {
+    try {
+      const url = new URL(originalUrl, window.location.origin);
+      const segments = url.pathname.split("/");
+      const modelsIndex = segments.indexOf("models");
+      if (modelsIndex === -1 || modelsIndex + 1 >= segments.length)
+        return null;
+      const submodelId = segments[modelsIndex + 1];
+      const fileId = url.searchParams.get("fileId");
+      if (!submodelId || !fileId)
+        return null;
+      return { submodelId, fileId };
+    } catch (e) {
+      console.error("Error parsing download URL:", e);
+      return null;
+    }
+  }
   async function handleCopy(linkElement, originalUrl) {
     const absoluteUrl = new URL(originalUrl, window.location.origin).href;
+    const downloadInfo = parseDownloadUrl(originalUrl);
     try {
-      showNotification("Получение прямой ссылки...", false);
+      showNotification("Получение прямой ссылки...");
+      let filename = await getFilenameFromApiByDownloadInfo(downloadInfo);
       const finalUrl = await new Promise((resolve, reject) => {
         GM_xmlhttpRequest({
           method: "HEAD",
@@ -93,14 +144,66 @@
           }
         });
       });
-      const filename = getFilenameFromUrl(finalUrl);
+      if (!filename) {
+        filename = getFilenameFromUrl(finalUrl);
+      }
       const aria2cText = `${finalUrl}
     out=${filename}`;
       await navigator.clipboard.writeText(aria2cText);
-      showNotification(`Скопировано! ${filename}`, false);
+      showNotification(`Скопировано! ${filename}`);
     } catch (error) {
       console.error("Ошибка при получении ссылки:", error);
-      showNotification("Ошибка: не удалось получить прямую ссылку. Проверьте консоль.", true);
+      showNotification(`Ошибка: ${getErrorMessage(error)}`, { type: "error" });
+    }
+  }
+  async function getFilenameFromApiByDownloadInfo(downloadInfo) {
+    if (!downloadInfo)
+      return null;
+    const pageInfo = parseCurrentPageUrl();
+    if (!pageInfo) {
+      console.warn("Could not parse current page URL for model info");
+      return null;
+    }
+    const buildId = getBuildId();
+    if (!buildId) {
+      console.warn("buildId not found in window.__NEXT_DATA__");
+      return null;
+    }
+    const apiUrl = `${window.location.origin}/_next/data/${buildId}/en/models/${pageInfo.modelId}/${pageInfo.modelSlug}.json?id=${pageInfo.modelId}&slug=${pageInfo.modelSlug}`;
+    try {
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        console.warn(`API request failed: ${response.status}`);
+        return null;
+      }
+      const data = await response.json();
+      const trpcState = data?.pageProps?.trpcState?.json?.queries;
+      if (!trpcState || !Array.isArray(trpcState)) {
+        console.warn("Unexpected API response structure: no queries array");
+        return null;
+      }
+      for (const query of trpcState) {
+        const modelVersions = query?.state?.data?.modelVersions;
+        if (!Array.isArray(modelVersions))
+          continue;
+        for (const version of modelVersions) {
+          if (String(version.id) !== String(downloadInfo.submodelId))
+            continue;
+          const files = version?.files;
+          if (!Array.isArray(files))
+            continue;
+          for (const file of files) {
+            if (String(file.id) === String(downloadInfo.fileId)) {
+              return file.name || null;
+            }
+          }
+        }
+      }
+      console.warn("File not found in API response");
+      return null;
+    } catch (error) {
+      console.error(`Error fetching filename from API: ${getErrorMessage(error)}`);
+      return null;
     }
   }
   function addButtonToLink(linkElement) {

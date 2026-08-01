@@ -13,44 +13,25 @@
 // @connect      ://*.civitai.com
 // ==/UserScript==
 
+import { showNotification } from "@app/utils/ui/notification";
+import { getErrorMessage } from "@app/utils/error";
+
 (() => {
   // Конфигурация
   const DOWNLOAD_SELECTOR = 'a[href^="/api/download/"]';
   const PROCESSED_ATTR = "data-aria2c-processed";
   const BUTTON_TEXT = "📋 aria2c";
 
+  declare const __NEXT_DATA__: {
+    buildId: string;
+  };
   /**
-   * Функция для показа уведомления
+   * Лениво получаем buildId из Next.js.
+   * __NEXT_DATA__ — глобальная переменная, установленная страницей,
+   * поэтому читаем её только при необходимости (не на уровне модуля).
    */
-  function showNotification(message: string, isError = false): void {
-    const notification = document.createElement("div");
-    notification.textContent = message;
-    notification.style.position = "fixed";
-    notification.style.bottom = "20px";
-    notification.style.right = "20px";
-    notification.style.backgroundColor = isError ? "#f44336" : "#4caf50";
-    notification.style.color = "white";
-    notification.style.padding = "10px 20px";
-    notification.style.borderRadius = "5px";
-    notification.style.zIndex = "10000";
-    notification.style.fontFamily = "sans-serif";
-    notification.style.fontSize = "14px";
-    notification.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
-    notification.style.opacity = "0";
-    notification.style.transition = "opacity 0.3s";
-    document.body.appendChild(notification);
-
-    // Force reflow to ensure transition works
-    notification.getBoundingClientRect();
-
-    setTimeout(() => {
-      notification.style.opacity = "1";
-    }, 10);
-
-    setTimeout(() => {
-      notification.style.opacity = "0";
-      setTimeout(() => notification.remove(), 300);
-    }, 2000);
+  function getBuildId(): string | null {
+    return __NEXT_DATA__?.buildId ?? null;
   }
 
   /**
@@ -99,12 +80,59 @@
   }
 
   /**
+   * Извлечение model_id и model_slug из URL текущей страницы
+   * Формат: https://civitai.red/models/<model_id>/<model_slug>
+   */
+  function parseCurrentPageUrl(): { modelId: string; modelSlug: string } | null {
+    try {
+      const url = new URL(window.location.href);
+      const segments = url.pathname.split("/");
+      // pathname: /models/<model_id>/<model_slug>
+      const modelsIndex = segments.indexOf("models");
+      if (modelsIndex === -1 || modelsIndex + 2 >= segments.length) return null;
+      return {
+        modelId: segments[modelsIndex + 1],
+        modelSlug: segments[modelsIndex + 2],
+      };
+    } catch (e) {
+      console.error("Error parsing current page URL:", e);
+      return null;
+    }
+  }
+
+  /**
+   * Извлечение submodel_id и fileId из URL ссылки на скачивание
+   * Формат: https://civitai.red/api/download/models/<submodel_id>?fileId=<file_id>
+   */
+  function parseDownloadUrl(originalUrl: string): { submodelId: string; fileId: string } | null {
+    try {
+      const url = new URL(originalUrl, window.location.origin);
+      const segments = url.pathname.split("/");
+      // pathname: /api/download/models/<submodel_id>
+      const modelsIndex = segments.indexOf("models");
+      if (modelsIndex === -1 || modelsIndex + 1 >= segments.length) return null;
+      const submodelId = segments[modelsIndex + 1];
+      const fileId = url.searchParams.get("fileId");
+      if (!submodelId || !fileId) return null;
+      return { submodelId, fileId };
+    } catch (e) {
+      console.error("Error parsing download URL:", e);
+      return null;
+    }
+  }
+
+  /**
    * Основная функция получения прямой ссылки и копирования в формате aria2c
    */
   async function handleCopy(linkElement: HTMLAnchorElement, originalUrl: string): Promise<void> {
     const absoluteUrl = new URL(originalUrl, window.location.origin).href;
+    const downloadInfo = parseDownloadUrl(originalUrl);
+
     try {
-      showNotification("Получение прямой ссылки...", false);
+      showNotification("Получение прямой ссылки...");
+
+      // Сначала получаем имя файла из API (до HEAD-запроса)
+      let filename = await getFilenameFromApiByDownloadInfo(downloadInfo);
 
       const finalUrl = await new Promise<string>((resolve, reject) => {
         GM_xmlhttpRequest({
@@ -120,13 +148,83 @@
         });
       });
 
-      const filename = getFilenameFromUrl(finalUrl);
+      // Фоллбэк — из CDN URL, если API не вернул имя
+      if (!filename) {
+        filename = getFilenameFromUrl(finalUrl);
+      }
+
       const aria2cText = `${finalUrl}\n    out=${filename}`;
       await navigator.clipboard.writeText(aria2cText);
-      showNotification(`Скопировано! ${filename}`, false);
+      showNotification(`Скопировано! ${filename}`);
     } catch (error) {
       console.error("Ошибка при получении ссылки:", error);
-      showNotification("Ошибка: не удалось получить прямую ссылку. Проверьте консоль.", true);
+      showNotification(`Ошибка: ${getErrorMessage(error)}`, { type: "error" });
+    }
+  }
+
+  /**
+   * Получение имени файла из API по информации о скачивании
+   */
+  async function getFilenameFromApiByDownloadInfo(
+    downloadInfo: { submodelId: string; fileId: string } | null,
+  ): Promise<string | null> {
+    if (!downloadInfo) return null;
+
+    const pageInfo = parseCurrentPageUrl();
+    if (!pageInfo) {
+      console.warn("Could not parse current page URL for model info");
+      return null;
+    }
+
+    const buildId = getBuildId();
+    if (!buildId) {
+      console.warn("buildId not found in window.__NEXT_DATA__");
+      return null;
+    }
+
+    const apiUrl = `${window.location.origin}/_next/data/${buildId}/en/models/${pageInfo.modelId}/${pageInfo.modelSlug}.json?id=${pageInfo.modelId}&slug=${pageInfo.modelSlug}`;
+
+    try {
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        console.warn(`API request failed: ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+
+      // Путь: pageProps.trpcState.json.queries[].state.data.modelVersions[].files[]
+      const trpcState = data?.pageProps?.trpcState?.json?.queries;
+      if (!trpcState || !Array.isArray(trpcState)) {
+        console.warn("Unexpected API response structure: no queries array");
+        return null;
+      }
+
+      for (const query of trpcState) {
+        const modelVersions = query?.state?.data?.modelVersions;
+        if (!Array.isArray(modelVersions)) continue;
+
+        for (const version of modelVersions) {
+          // Сравниваем по id версии (submodel_id)
+          if (String(version.id) !== String(downloadInfo.submodelId)) continue;
+
+          const files = version?.files;
+          if (!Array.isArray(files)) continue;
+
+          for (const file of files) {
+            // Сравниваем по id файла
+            if (String(file.id) === String(downloadInfo.fileId)) {
+              return file.name || null;
+            }
+          }
+        }
+      }
+
+      console.warn("File not found in API response");
+      return null;
+    } catch (error) {
+      console.error(`Error fetching filename from API: ${getErrorMessage(error)}`);
+      return null;
     }
   }
 
