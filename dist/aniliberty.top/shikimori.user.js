@@ -4,8 +4,8 @@
 // @version      1.0
 // @description  Sync and display shikimori status
 // @author       Apkawa
-// @match        https://www.aniliberty.top/
-// @match        https://aniliberty.top/
+// @match        https://www.aniliberty.top/*
+// @match        https://aniliberty.top/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setValue
 // @grant        GM_getValue
