@@ -147,7 +147,9 @@ function getErrorMessage(error) {
       if (!filename) {
         filename = getFilenameFromUrl(finalUrl);
       }
-      const aria2cText = `${finalUrl}
+      const currentPage = window.location.href;
+      const aria2cText = `# ${currentPage}
+${finalUrl}
     out=${filename}`;
       await navigator.clipboard.writeText(aria2cText);
       showNotification(`Скопировано! ${filename}`);

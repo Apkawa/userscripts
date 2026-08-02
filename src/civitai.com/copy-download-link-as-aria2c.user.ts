@@ -54,7 +54,8 @@ import { getErrorMessage } from "@app/utils/error";
     try {
       const urlObj = new URL(url);
 
-      // 1. Пробуем найти query-параметр, значение которого содержит Content-Disposition с именем файла
+      // 1. Пробуем найти query-параметр, значение которого
+      // содержит Content-Disposition с именем файла
       let cdParam: string | null = null;
       for (const [, value] of urlObj.searchParams) {
         const decoded = decodeURIComponent(value);
@@ -152,8 +153,10 @@ import { getErrorMessage } from "@app/utils/error";
       if (!filename) {
         filename = getFilenameFromUrl(finalUrl);
       }
-
-      const aria2cText = `${finalUrl}\n    out=${filename}`;
+      // Сохраняем текущую страницу в комметарии
+      // т.к. ссылка на скачивание может протухнуть и надо снова перекопировать
+      const currentPage = window.location.href;
+      const aria2cText = `# ${currentPage}\n${finalUrl}\n    out=${filename}`;
       await navigator.clipboard.writeText(aria2cText);
       showNotification(`Скопировано! ${filename}`);
     } catch (error) {
